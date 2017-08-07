@@ -35,7 +35,7 @@ cp -v tomxplayer $INT_DIR/usr/bin
 add_sizeof_file tomxplayer
 cp -v tomxplayer.bin $INT_DIR/usr/bin
 add_sizeof_file tomxplayer.bin
-cat DEBIAN/control | sed "s/%version%/$VERSION-$CONF/g" | sed "s/%size%/$SIZE/g" | sed "s/%deps%/$DEPS/g" > $INT_DIR/DEBIAN/control
+cat DEBIAN/control | sed "s/%version%/$VERSION/g" | sed "s/%size%/$SIZE/g" | sed "s/%deps%/$DEPS/g" > $INT_DIR/DEBIAN/control
 
 remove_old_builds() {
 	cd $HOME_PATH/out/$CONF
