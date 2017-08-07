@@ -198,6 +198,7 @@ SRC += \
   list.c \
   main_settings.c \
   url_dialog.c \
+  ytdl_control.c \
   $(OSD_SRC)
 
 all:

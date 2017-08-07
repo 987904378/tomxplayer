@@ -37,6 +37,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "url_dialog.h"
+#include "ytdl_control.h"
 
 #ifdef GTK3
 #include "gtk3_compat.h"
@@ -529,18 +530,43 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	opc_unhidevideo();
 }
 
+static void ytdl_out_cb(char *out_line) {
+#ifndef NO_OSD
+	if(!_minimized) {
+		tr_show_thread(out_line);
+	}
+#endif
+}
+
+static void ytdl_url_cb(char *url) {
+#ifndef NO_OSD
+	set_video_path(url);
+	play_path();
+#endif
+}
+
 static void url_clicked( GtkWidget *widget, gpointer data ) {
 	opc_hidevideo();
 #ifndef NO_OSD
 	tr_stop();
 #endif
 	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
-	if (gtk_dialog_run (GTK_DIALOG (ud->window)) == GTK_RESPONSE_ACCEPT) {
+	int response = gtk_dialog_run (GTK_DIALOG (ud->window));
+	if (response == GTK_RESPONSE_ACCEPT) {
 		gtk_widget_destroy((GtkWidget *)ud->window);
 		if(ud->url != NULL) {
 			set_video_path(ud->url);
 			play_path();
-		}
+		} else
+			opc_unhidevideo();
+	} else if (response == GTK_RESPONSE_APPLY) {
+	if(ud->url != NULL) {
+			gtk_widget_destroy((GtkWidget *)ud->window);
+			ytdl_register_output_cb(&ytdl_out_cb);
+			ytdl_register_url_cb(&ytdl_url_cb);
+			ytdl_cget_url_thread(ud->url);
+		} else
+			opc_unhidevideo();
 	} else {
 		gtk_widget_destroy((GtkWidget *)ud->window);
 		opc_unhidevideo();

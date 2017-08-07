@@ -45,14 +45,20 @@ url_dialog_t *gtk_url_dialog_new(GtkWindow * parent) {
 								GTK_STOCK_OK,
 #endif
 								GTK_RESPONSE_ACCEPT,
+								"_Use 'youtube-dl'",
+								GTK_RESPONSE_APPLY,
+
 								NULL);
 	gtk_window_set_default_size((GtkWindow *)temp->window, 640, 200);
 	GtkWidget *entry = gtk_entry_new();
 	g_signal_connect((GObject *)entry,"changed",G_CALLBACK(entry_changed), temp);
+	GtkWidget *window_box;
 #ifdef GTK3
-	gtk_box_pack_start((GtkBox *)gtk_dialog_get_content_area ((GtkDialog *) temp->window),entry,TRUE,TRUE,0);
+	window_box = gtk_dialog_get_content_area((GtkDialog *) temp->window);
+	gtk_box_pack_start((GtkBox *)window_box ,entry,TRUE,TRUE,0);
 #else
-	gtk_container_add((GtkContainer *)((GtkDialog *)temp->window)->vbox, entry);
+	window_box = ((GtkDialog *)temp->window)->vbox;
+	gtk_container_add((GtkContainer *)window_box, entry);
 #endif
 	gtk_widget_show(entry);
 	return temp;
