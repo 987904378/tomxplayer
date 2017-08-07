@@ -197,6 +197,7 @@ SRC += \
   setting_list_view.c \
   list.c \
   main_settings.c \
+  url_dialog.c \
   $(OSD_SRC)
 
 all:
