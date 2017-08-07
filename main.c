@@ -739,7 +739,7 @@ int main (int argc, char * argv[]) {
 	gtk_widget_show_all(window);
 
 	if(argc > 1) {
-		if(set_video_path(argv[argc -1]))
+		if(!set_video_path(argv[argc -1]))
 			play_path();
 	}
 	gtk_main();
