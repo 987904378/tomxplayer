@@ -157,10 +157,12 @@ void op_widget_hidevideo(op_widget_t *opw) {
 #ifndef NO_OSD
 	tr_stop(opw->tr);
 #endif
+	opw->hidden = 1;
 	opc_hidevideo();
 }
 
 void op_widget_unhidevideo(op_widget_t *opw) {
+	opw->hidden = 0;
 	opc_unhidevideo();
 }
 
@@ -184,7 +186,7 @@ void op_widget_play(op_widget_t *op_widget, char *vpath) {
 
 void op_widget_osd_show(op_widget_t *opw, char *text) {
 #ifndef NO_OSD
-	if(!opw->minimized) {
+	if(!opw->minimized && !opw->hidden) {
 		tr_set_text(opw->tr, text);
 		tr_show_thread(opw->tr);
 	}

@@ -49,11 +49,12 @@ typedef struct {
 	pthread_t restore_volume_thread;
 	pthread_t set_pb_position_thread;
 	int alpha;
+	int hidden;
 	int consecutive_err;
 } top_widget_t;
 
-#define top_widget_hidevideo(x) op_widget_hidevideo(x->op_widget)
-#define top_widget_unhidevideo(x) op_widget_unhidevideo(x->op_widget)
+#define top_widget_hidevideo(x) x->hidden = 1; op_widget_hidevideo(x->op_widget)
+#define top_widget_unhidevideo(x) x->hidden = 0; op_widget_unhidevideo(x->op_widget)
 #define top_widget_is_ready(x) op_widget_is_ready(x->op_widget)
 #define top_widget_osd_show(x, y) op_widget_osd_show(x->op_widget, y)
 #define top_widget_osd_set_text_size_percent(x, y) \

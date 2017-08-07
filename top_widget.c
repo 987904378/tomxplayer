@@ -47,10 +47,13 @@ static void * restore_volume(void * arg) {
 		usleep(100 * 1000);
 		count ++;
 	}
+	usleep(100 * 1000);
 	top_widget_t *topw = (top_widget_t *)arg;
 	if(!topw->op_widget->minimized && count < 200) {
-		op_widget_unhidevideo(topw->op_widget);
-		op_widget_set_alpha(topw->alpha);
+		if(!topw->hidden) {
+			op_widget_unhidevideo(topw->op_widget);
+			op_widget_set_alpha(topw->alpha);
+		}
 	} else if(count >= 199) {
 		LOGE(TAG, "%s" ,"Could not restore volume? Did omxplayer actually start?");
 		top_widget_stop(topw);
@@ -504,6 +507,7 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	temp->restore_volume_thread = 0;
 	temp->set_pb_position_thread = 0;
 	temp->alpha = 255;
+	temp->hidden = 0;
 	temp->consecutive_err = 0;
 
 #ifdef GTK3

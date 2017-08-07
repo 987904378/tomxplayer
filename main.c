@@ -107,7 +107,7 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 
 gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = FALSE;
-	if(win_trans_unfocus.int_value && !_minimized) {
+	if(win_trans_unfocus.int_value && !_minimized && !topw->hidden) {
 		top_widget_set_alpha(topw, win_trans_alpha.int_value);
 #ifdef GTK3
 		gtk_widget_set_opacity ((GtkWidget *)window, (double)win_trans_alpha.int_value / 255);
@@ -118,7 +118,7 @@ gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpoint
 
 gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = TRUE;
-	if(win_trans_unfocus.int_value) {
+	if(win_trans_unfocus.int_value && !topw->hidden) {
 		top_widget_set_alpha(topw, 255);
 #ifdef GTK3
 		gtk_widget_set_opacity((GtkWidget *)window, 1);
@@ -372,7 +372,7 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 		char *filename;
 		filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
 		gtk_widget_destroy (dialog);
-		//top_widget_unhidevideo(topw);
+		top_widget_unhidevideo(topw);
 		top_widget_set_video_path(topw, filename);
 		top_widget_play_path(topw);
 		g_free (filename);
@@ -476,7 +476,7 @@ static void osd_textsize_updated(void *setting, void *user_data) {
 #endif
 
 static void win_trans_setting_updated(void *setting, void *user_data) {
-	if(win_trans_unfocus.int_value && !_focused) {
+	if(win_trans_unfocus.int_value && !_focused && !topw->hidden) {
 		top_widget_set_alpha(topw, win_trans_alpha.int_value);
 #ifdef GTK3
 		if(window)
