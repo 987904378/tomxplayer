@@ -32,10 +32,11 @@
 
 #define TAG "op_control"
 
-int pos[4];
-char *file_name;
-int is_running = 0;
-pthread_t thread;
+static int pos[4];
+static char *file_name;
+static int is_running = 0;
+static pthread_t thread;
+static int hidden = 0;
 
 void opc_stop_omxplayer() {
 	if(is_running) {
@@ -47,12 +48,13 @@ void opc_stop_omxplayer() {
 static void *start_omxplayer_system(void *arg) {
 	char cmd[1024];
 	is_running = 1;
-	sprintf(cmd, "omxplayer %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
+	sprintf(cmd, "omxplayer %s %s --vol 0.05 --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
 #ifndef DEBUG
 	" > /dev/null"
 #endif
 	,
 	omx_extra_args.string_value,
+	hidden ? "--alpha 0" : "",
 	getpid(),
 	audio_out.string_value,
 	stretch.int_value ? "stretch": "Letterbox", 
@@ -112,11 +114,13 @@ void opc_set_pb_position(unsigned long pos) {
 }
 
 void opc_hidevideo() {
+	hidden = 1;
 	if(!is_running) return;
 	op_dbus_send_hidevideo();
 }
 
 void opc_unhidevideo() {
+	hidden = 0;
 	if(!is_running) return;
 	op_dbus_send_unhidevideo();
 }
