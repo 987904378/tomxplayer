@@ -584,6 +584,32 @@ static gboolean window_key_release_event (GtkWidget *widget, GdkEventKey *event,
 	return TRUE;
 }
 
+static void about_clicked(GtkWidget *widget, gpointer user_data) {
+#ifdef GTK3
+	const char *authors[] = { "<a href=\"mailto:theonejohnnyd@gmail.com\">Jonathan Dennis</a>", NULL };
+#else
+	const char *authors[] = { "Jonathan Dennis <theonejohnnyd@gmail.com>", NULL };
+
+#endif
+	GtkAboutDialog *ad = (GtkAboutDialog *)gtk_about_dialog_new();
+	gtk_window_set_transient_for((GtkWindow *)ad, (GtkWindow *)window);
+	gtk_about_dialog_set_program_name(ad, "Tactical OMXPlayer Gtk (tomxplayer)");
+	gtk_about_dialog_set_version(ad, VERSION);
+	gtk_about_dialog_set_copyright(ad, "Copyright (c) 2017 Meticulus Development\n"
+						"Copyright (c) 2012, Broadcom Europe Ltd");
+	gtk_about_dialog_set_comments(ad,"GUI video player for the Raspberry Pi / wrapper for omxplayer");
+#ifdef GTK3
+	gtk_about_dialog_set_license_type(ad, GTK_LICENSE_GPL_3_0);
+#endif
+
+	gtk_about_dialog_set_website(ad, "http://meticulus.co.vu");
+	gtk_about_dialog_set_authors(ad, authors);
+	opc_hidevideo();
+	gtk_dialog_run((GtkDialog *) ad);
+	gtk_widget_destroy((GtkWidget *)ad);
+	opc_unhidevideo();
+}
+
 static void build_drawing_area(GtkBox *vbox) {
 	GdkColor black;
 	black.red = 0;
@@ -610,6 +636,10 @@ static void build_top_toolbar(GtkBox *vbox) {
 	GtkToolItem *preferences = gtk_tool_button_new_from_stock("gtk-properties");
 	gtk_signal_connect((GtkObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar, preferences, 2);
+
+	GtkToolItem *about = gtk_tool_button_new_from_stock("gtk-about");
+	gtk_signal_connect((GtkObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
+	gtk_toolbar_insert((GtkToolbar *)top_toolbar, about, 3);
 
 	gtk_box_pack_start((GtkBox *)top_controls, top_toolbar, FALSE, FALSE, 0);
 	gtk_box_pack_start((GtkBox *)vbox, top_controls, FALSE, FALSE, 0);
@@ -772,8 +802,10 @@ int main (int argc, char * argv[]) {
 	if(argc > 1)
 		set_video_path(argv[argc -1]);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_title((GtkWindow *)window,"tomxplayer"); 
-	gtk_window_set_icon((GtkWindow *)window,gdk_pixbuf_new_from_file(ICON_PATH, &gerr));
+	gtk_window_set_title((GtkWindow *)window,"tomxplayer");
+	GdkPixbuf *icon = gdk_pixbuf_new_from_file(ICON_PATH, &gerr);
+	gtk_window_set_icon((GtkWindow *)window,icon);
+	gtk_window_set_default_icon(icon);
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
