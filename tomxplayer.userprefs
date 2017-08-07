@@ -1,9 +1,12 @@
-﻿<Properties StartupItem="tomx.cproj">
+﻿<Properties StartupItem="tomxplayer.cproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="main.c">
+  <MonoDevelop.Ide.Workbench ActiveDocument="op_control.c">
     <Files>
-      <File FileName="main.c" Line="312" Column="11" />
-      <File FileName="version.h" Line="1" Column="1" />
+      <File FileName="op_dbus.c" Line="147" Column="41" />
+      <File FileName="op_control.c" Line="41" Column="28" />
+      <File FileName="main.c" Line="570" Column="1" />
+      <File FileName="op_control.h" Line="22" Column="1" NotebookId="1" />
+      <File FileName="time_utils.h" Line="27" Column="7" NotebookId="1" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
