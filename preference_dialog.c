@@ -29,6 +29,10 @@
 #include "log.h"
 #include "setting_list_view.h"
 
+#ifdef GTK3
+#include "gtk3_compat.h"
+#endif
+
 #define TAG "preference_dialog"
 
 static void treeview_cursor_changed(GtkTreeView *treeview, gpointer user_data) {
@@ -47,7 +51,9 @@ static void treeview_cursor_changed(GtkTreeView *treeview, gpointer user_data) {
 }
 
 static void preference_dialog_on_show(GtkWidget * widget, gpointer user_data) {
+#ifndef GTK3
 	gtk_window_set_policy((GtkWindow *)widget,FALSE,TRUE,FALSE);
+#endif
 }
 
 preference_dialog_t *gtk_preference_dialog_new(GtkWindow * parent) {
@@ -63,7 +69,11 @@ preference_dialog_t *gtk_preference_dialog_new(GtkWindow * parent) {
 	gtk_widget_set_events((GtkWidget *)temp->window, GDK_ALL_EVENTS_MASK);
 	gtk_signal_connect((GtkObject *)temp->window,"show",G_CALLBACK(preference_dialog_on_show), NULL);
 	GtkWidget *hbox = gtk_hbox_new(FALSE,6);
-	gtk_container_add((GtkContainer *)((GtkDialog *)temp->window)->vbox, hbox); 
+#ifdef GTK3
+	gtk_box_pack_start((GtkBox *)gtk_dialog_get_content_area ((GtkDialog *) temp->window),hbox,TRUE,TRUE,0);
+#else
+	gtk_container_add((GtkContainer *)((GtkDialog *)temp->window)->vbox, hbox);
+#endif 
 	temp->settings_treeview = gtk_settings_treeview_new();
 	g_signal_connect((GtkObject *)temp->settings_treeview->treeview,"cursor-changed",G_CALLBACK(treeview_cursor_changed), temp);
 	gtk_widget_set_size_request(temp->settings_treeview->this, 200, -1);

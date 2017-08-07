@@ -161,6 +161,7 @@ static void *tr_show(void * string_arg)
       char *textc = strdup(text);
       sem_post(&sem);
       render_subtitle(img, text_size, textc);
+      free(textc);
       graphics_update_displayed_resource(img, 0, 0, 0, 0);
       alpha -= 1;
    }

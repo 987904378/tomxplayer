@@ -27,6 +27,10 @@
 #include "log.h"
 #include "list.h"
 
+#ifdef GTK3
+#include "gtk3_compat.h"
+#endif
+
 #define MARGIN 3
 
 #define TAG "setting_list_view"
@@ -37,15 +41,25 @@ static void setting_vbox_size_allocated(GtkWidget *widget, GtkAllocation *alloca
 }
 static void build_setting_viewer_header(GtkVBox *vbox, setting_t *setting) {
 	GtkWidget * label_title = gtk_label_new(setting->long_name);
+#ifdef GTK3
+	gtk_label_set_xalign((GtkLabel *)label_title,0);
+	gtk_label_set_yalign((GtkLabel *)label_title,0);
+#else
 	gtk_misc_set_alignment((GtkMisc *)label_title,0,0);
+#endif
 	gtk_box_pack_start((GtkBox *)vbox, label_title, FALSE, FALSE, MARGIN);
 }
 static void build_setting_viewer_footer(GtkVBox *vbox, setting_t *setting) {
 	GtkWidget *label_desc = gtk_label_new(setting->desc);
 	gtk_signal_connect((GtkObject *)vbox,"size-allocate",G_CALLBACK(setting_vbox_size_allocated), label_desc);
 	gtk_label_set_line_wrap ((GtkLabel *)label_desc, TRUE);
-	gtk_widget_set_size_request((GtkWidget *)label_desc,350, 100);
+	gtk_widget_set_size_request((GtkWidget *)label_desc,350, 0);
+#ifdef GTK3
+	gtk_label_set_xalign((GtkLabel *)label_desc,0);
+	gtk_label_set_yalign((GtkLabel *)label_desc,0);
+#else
 	gtk_misc_set_alignment((GtkMisc *)label_desc,0,0);
+#endif
 	gtk_widget_set_sensitive((GtkWidget *)label_desc, FALSE);
 	gtk_box_pack_start((GtkBox *)vbox, label_desc, FALSE, FALSE, MARGIN * 2);
 	gtk_box_pack_end((GtkBox *)vbox, gtk_hseparator_new(), FALSE, FALSE, MARGIN * 2);
@@ -67,17 +81,30 @@ static GtkWidget *gtk_string_setting_viewer_new(setting_t *setting) {
 		gtk_entry_set_text((GtkEntry *)combo_or_entry,setting->string_value);
 		gtk_signal_connect((GtkObject *)combo_or_entry,"changed",G_CALLBACK(entry_changed), setting);
 	} else {
-	    GtkTreeStore *model = gtk_tree_store_new(1, G_TYPE_STRING);
-	    char *option = setting->option_array;
-	    for(int i =0;i < setting->option_count;i ++) {
-			GtkTreeIter i = {0,NULL,NULL,NULL};
-			gtk_tree_store_append(model, &i,NULL);
-			gtk_tree_store_set(model,&i,0,option, -1);
+#ifdef GTK3	
+		combo_or_entry = gtk_combo_box_text_new_with_entry();
+		char *option = setting->option_array;
+		for(int i =0;i < setting->option_count;i ++) {
+			gtk_combo_box_text_append((GtkComboBoxText *)combo_or_entry, NULL, option);
 			void *offset = (void *)option + strlen(option) + 1;
 			option = (char *)offset;
 		}
+
+		GtkEntry *entry = (GtkEntry *)gtk_bin_get_child ((GtkBin * )combo_or_entry);
+#else
+		GtkTreeStore *model = gtk_tree_store_new(1, G_TYPE_STRING);
+		char *option = setting->option_array;
+		for(int i =0;i < setting->option_count;i ++) {
+			GtkTreeIter iter = {0, NULL, NULL, NULL};
+			gtk_tree_store_append(model, &iter, NULL);
+			gtk_tree_store_set(model, &iter ,0 , option, -1);
+			void *offset = (void *)option + strlen(option) + 1;
+			option = (char *)offset;
+		}
+
 		combo_or_entry = gtk_combo_box_entry_new_with_model((GtkTreeModel *)model, 0);
 		GtkEntry *entry = GTK_ENTRY (GTK_BIN (combo_or_entry)->child);
+#endif
 		gtk_entry_set_text(entry,setting->string_value);
 		gtk_signal_connect((GtkObject *)entry,"changed",G_CALLBACK(entry_changed), setting);
 	}
@@ -129,7 +156,11 @@ setting_list_view_t *gtk_setting_list_view_new() {
 	temp->this = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy((GtkScrolledWindow *)temp->this,GTK_POLICY_NEVER,GTK_POLICY_AUTOMATIC);
 	temp->vbox = gtk_vbox_new(FALSE, 0);
+#ifdef GTK3
+	gtk_container_add((GtkContainer *)temp->this, temp->vbox);
+#else
 	gtk_scrolled_window_add_with_viewport((GtkScrolledWindow *)temp->this, temp->vbox);
+#endif
 	gtk_container_set_border_width((GtkContainer *)temp->vbox, MARGIN * 4);
 	temp->vbox_children = list_create("vbox_children",1,1);
 	return temp;

@@ -36,6 +36,10 @@
 #include "osd_rpi/text_render.h"
 #include <libgen.h>
 
+#ifdef GTK3
+#include "gtk3_compat.h"
+#endif
+
 #define TAG "main"
 
 #ifndef RESOURCE_DIR
@@ -76,14 +80,14 @@ static int pb_pos_poll_running = 0;
 static pthread_t fs_hide_controls_thread;
 static pthread_t restore_volume_thread;
 static pthread_t set_pb_position_thread;
-
+#ifndef GTK3
 static GtkStyle *form_orig;
 static GtkStyle *label_orig;
 static GtkStyle *toolbar_orig;
 static GtkStyle *form_fs;
 static GtkStyle *label_fs;
 static GtkStyle *toolbar_fs;
-
+#endif
 static list_t audio_settings;
 static list_t playback_settings;
 #ifndef x86
@@ -200,13 +204,24 @@ static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *ev
 
 static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
+#ifdef GTK3
+	long long newval = (long long)value;
+#else
 	long long newval = (long long)adj->value;
+#endif
 	_should_uslider = FALSE;
 	pthread_cancel(set_pb_position_thread);
 	pthread_create(&set_pb_position_thread, NULL, &timed_set_pb_position, (long long *)newval);
+#ifdef GTK3
+	update_pb_position_ui((long long)newval, (long long)gtk_adjustment_get_upper(adj));
+#ifndef x86
+	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+#endif
+#else
 	update_pb_position_ui((long long)newval, (long long)adj->upper);
 #ifndef x86
 	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
 #endif
 	return FALSE;
 }
@@ -214,11 +229,21 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
 	_should_uslider = FALSE;
+#ifdef GTK3
+	long long value = (long long)gtk_adjustment_get_value (adj);
+	value += 10 * 1000 * 1000;
+	opc_set_pb_position(value);
+	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
+#ifndef x86
+	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+#endif
+#else
 	adj->value += 10 * 1000 * 1000;
 	opc_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
 #ifndef x86
 	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
 #endif
 	_should_uslider = TRUE;
 	return FALSE;
@@ -227,11 +252,21 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
 	_should_uslider = FALSE;
+#ifdef GTK3
+	long long value = (long long)gtk_adjustment_get_value (adj);
+	value -= 10 * 1000 * 1000;
+	opc_set_pb_position(value);
+	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
+#ifndef x86
+	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+#endif
+#else
 	adj->value -= 10 * 1000 * 1000;
 	opc_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
 #ifndef x86
 	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
 #endif
 	_should_uslider = TRUE;
 	return FALSE;
@@ -426,7 +461,7 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 	if(!_fullscreen) {
 		gtk_window_fullscreen((GtkWindow *)window);
-
+#ifndef GTK3
 		if(form_orig != NULL) {
 			g_object_unref(form_orig);
 			g_object_unref(form_fs);
@@ -453,17 +488,20 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		gtk_widget_set_style(vol_controls, toolbar_fs);
 		gtk_widget_set_style(time_label, label_fs);
 		gtk_widget_set_style(volume_label, label_fs);
+#endif
 		hide_controls();
 		_fullscreen = TRUE;
 	} else {
-		_fullscreen = FALSE;  
+		_fullscreen = FALSE;
 		gtk_window_unfullscreen((GtkWindow *)window);
+#ifndef GTK3
 		gtk_widget_set_style(window, form_orig);
 		gtk_widget_set_style(top_toolbar, toolbar_orig);
 		gtk_widget_set_style(pb_controls, toolbar_orig);
 		gtk_widget_set_style(vol_controls, toolbar_orig);
 		gtk_widget_set_style(time_label, label_orig);
 		gtk_widget_set_style(volume_label, label_orig);
+#endif
 		show_controls();
 	}
 }
@@ -659,7 +697,7 @@ static void win_trans_setting_updated(void *setting) {
 	if(win_trans_unfocus.int_value && !_focused && !_minimized)
 		opc_set_alpha(win_trans_alpha.int_value);
 	else
-		opc_set_alpha(255);
+		opc_hidevideo();
 }
 
 static void arb_offset_updated(void *setting) {
