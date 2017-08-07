@@ -43,7 +43,6 @@ static int do_volume(int vol) {
 
 static void * restore_volume(void * arg) {
 	int count = 0;
-	pthread_detach(pthread_self());
 	while(do_volume(volume.int_value) && count < 200) {
 		usleep(100 * 1000);
 		count ++;
@@ -286,14 +285,26 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 static void playback_ended(int exit_code, void *user_data) {
 	LOGD(TAG, "Playback ended with code %d", exit_code);
 	top_widget_t *topw = (top_widget_t *)user_data;
-	if(exit_code) {
 #ifndef NO_OSD
-		char *text;
-		asprintf(&text, "Opps! %d exit code running omxplayer.",exit_code);
+	char *text;
+#endif
+	if(exit_code && topw->consecutive_err < 3) {
+#ifndef NO_OSD
+		asprintf(&text, "Oops! %d exit code running omxplayer.",exit_code);
 		top_widget_osd_show(topw, text);
 		free(text);
 #endif
+		topw->consecutive_err += 1;
 		sleep(5);
+	} else if(topw->consecutive_err >= 3) {
+		topw->consecutive_err = 0;
+		top_widget_stop(topw);
+#ifndef NO_OSD
+		asprintf(&text, "Oops! too many errors running omxplayer; stopping loop.");
+		top_widget_osd_show(topw, text);
+		free(text);
+#endif
+		return;
 	}
 	if(cont_pb.int_value) {
 		mp_move_next(topw->playlist);
@@ -338,6 +349,8 @@ void top_widget_play_path(top_widget_t *topw) {
 	if(!topw->pb_pos_poll_running) {
 		pthread_create(&topw->pb_pos_poll_thread,NULL, &pb_pos_poll,topw); 
 	}
+	pthread_cancel(topw->restore_volume_thread);
+	pthread_join(topw->restore_volume_thread, NULL);
 	pthread_create(&topw->restore_volume_thread,NULL, &restore_volume,topw);
 #ifndef NO_OSD
 	top_widget_osd_show(topw, basename(vpath));
@@ -491,6 +504,7 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	temp->restore_volume_thread = 0;
 	temp->set_pb_position_thread = 0;
 	temp->alpha = 255;
+	temp->consecutive_err = 0;
 
 #ifdef GTK3
 	temp->context = g_main_context_default();

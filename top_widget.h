@@ -49,6 +49,7 @@ typedef struct {
 	pthread_t restore_volume_thread;
 	pthread_t set_pb_position_thread;
 	int alpha;
+	int consecutive_err;
 } top_widget_t;
 
 #define top_widget_hidevideo(x) op_widget_hidevideo(x->op_widget)
