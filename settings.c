@@ -91,7 +91,7 @@ void settings_read(setting_t *setting) {
 		}
 	}
 	if(error != NULL) {
-		LOGE(TAG, "%s",error->message); 
+		LOGW(TAG, "%s",error->message);
 	}
 }
 

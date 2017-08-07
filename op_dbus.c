@@ -130,7 +130,7 @@ static int send_message(char* name, char * method, list_t *args, void *reply_val
     LOGD(TAG,"%s", "Message sent");
 #endif
 	if(dbus_error_is_set (&error)) {
-		LOGE(TAG, "%s", error.message);
+		LOGW(TAG, "%s", error.message);
 		ret = 1;
 		goto end;
 	}
