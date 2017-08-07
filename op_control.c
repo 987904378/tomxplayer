@@ -46,9 +46,10 @@ void opc_stop_omxplayer() {
 }
 
 static void *start_omxplayer_system(void *arg) {
-	char cmd[1024];
+	char *cmd;
+	int ret;
 	is_running = 1;
-	sprintf(cmd, "omxplayer %s %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
+	asprintf(&cmd, "omxplayer %s %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
 #ifndef DEBUG
 	" > /dev/null"
 #endif

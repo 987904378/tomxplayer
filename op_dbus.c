@@ -43,9 +43,9 @@
 
 static void export_session () {
 	int fd;
-    char file[255];
+    char *file;
     char address[255];
-	sprintf(file,"/tmp/omxplayerdbus.%s",getenv("USER"));
+	asprintf(&file,"/tmp/omxplayerdbus.%s",getenv("USER"));
 	fd = open(file, O_RDONLY);
 	if (fd < 0) {
 		LOGE(TAG, "Could not open session file %s",file);
@@ -79,13 +79,13 @@ static int create_connection(DBusConnection **connection) {
 }
 
 static int prep_message(DBusMessage **message, DBusMessageIter *iter, char *name, char *method) {
-	char dest[255];
+	char *dest;
 	*message = dbus_message_new_method_call(NULL, MPRIS_PATH, name, method);
 	if(message == NULL) {
 		LOGE(TAG,"%s","Could not create message");
 		return 1;
 	}
-	sprintf(dest,"%s%d",MPRIS_DEST,getpid());
+	asprintf(&dest,"%s%d",MPRIS_DEST,getpid());
 	dbus_message_set_auto_start(*message, TRUE);
 	dbus_message_set_destination (*message, dest);
 	dbus_message_iter_init_append (*message, iter);
@@ -200,12 +200,11 @@ void op_dbus_send_setaspectmode(char *aspect) {
 }
 
 void op_dbus_send_setvideopos(int pos[]) {
-	char buf[255];
 	char *value1 = "/not/used";
-	char *value2 = buf;
+	char *value2;
 	int type1 = DBUS_TYPE_OBJECT_PATH;
 	int type2 = DBUS_TYPE_STRING;
-	sprintf(value2,"%d %d %d %d",pos[0] ,pos[1] ,pos[2], pos[3]);
+	asprintf(&value2,"%d %d %d %d",pos[0] ,pos[1] ,pos[2], pos[3]);
 	list_t args = list_create("args",4, 1);
 	list_add_entry(&args, &type1);
 	list_add_entry(&args, &value1);

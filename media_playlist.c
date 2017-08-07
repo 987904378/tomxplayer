@@ -34,7 +34,7 @@
 #define TAG "media_playlist"
 
 int is_media_by_ext(const char *path) {
-	char spaced[255];
+	char *spaced;
 	char *extfound;
 	char *ext = rindex(path, '.');
 	if(ext == NULL)
@@ -44,7 +44,7 @@ int is_media_by_ext(const char *path) {
 		ext += 1;
 	else
 		return 0;
-	sprintf(spaced,"%s ", ext);
+	asprintf(&spaced,"%s ", ext);
 	extfound = strstr(file_types.string_value, spaced);
 	if(extfound == NULL)
 		return 0;
@@ -63,7 +63,7 @@ media_playlist_t *mp_create() {
 };
 
 media_playlist_t *mp_create_dir_of_file(char * path) {
-	char full_path[255];
+	char *full_path;
 	char *dir_path = dirname(strdup(path));
 	struct dirent **files = NULL;
 	media_playlist_t *plist = mp_create();
@@ -75,12 +75,13 @@ media_playlist_t *mp_create_dir_of_file(char * path) {
 		return NULL;
 	}
 	for(int i = 0; i < file_count; i ++) {
-		sprintf(full_path, "%s/%s",dir_path, files[i]->d_name);
+		asprintf(&full_path, "%s/%s",dir_path, files[i]->d_name);
 		free(files[i]);
 		if(!strcmp(path,full_path))
 			plist->index = plist->list.count;
 		list_add_entry(&plist->list, strdup(full_path));
 		LOGI(TAG,"Added %s to playlist.",full_path);
+		free(full_path);
 	}
 	free(dir_path);
 	return plist;
@@ -90,10 +91,10 @@ void mp_add(media_playlist_t *plist, char *full_path) {
 	list_add_entry(&plist->list, full_path);
 }
 
-void mp_get_current(media_playlist_t *plist, char * dest) {
+char *mp_get_current(media_playlist_t *plist) {
 	char *temp = (char *)list_get_at_index(&plist->list, plist->index);
 	LOGD(TAG,"getcurrent=%s",temp);
-	sprintf(dest, "%s",temp);
+	return temp;
 }
 
 void mp_move_next(media_playlist_t *plist) {

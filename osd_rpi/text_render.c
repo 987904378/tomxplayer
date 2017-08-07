@@ -49,7 +49,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 static GRAPHICS_RESOURCE_HANDLE img;
 static uint32_t x,y = 0;
-static char text[255];
+static char *text;
 static int showing = 0;
 static uint32_t alpha = 0xff;
 static int dinit = 0;
@@ -120,7 +120,7 @@ void tr_deinit() {
 
 static void tr_set_text(char * t) {
 	sem_wait(&sem);
-	sprintf(text,"%s",t);
+	asprintf(&text,"%s",t);
 	free(t);
 	sem_post(&sem);
 }

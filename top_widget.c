@@ -52,14 +52,14 @@ static void * restore_volume(void * arg) {
 }
 
 static void update_pb_position_ui(top_widget_t *topw) {
-	char dur[255];
-	char pos[255];
-	char timestamp[255];
+	char *dur;
+	char *pos;
+	char *timestamp;
 	if(topw->pb_dur <= 0) return;
 	gtk_range_set_range((GtkRange *)topw->hscale, 0, (gdouble)topw->pb_dur);
 	gtk_range_set_value((GtkRange *)topw->hscale, (gdouble)topw->pb_pos);
-	if(!ms_to_time(topw->pb_dur,dur) && !ms_to_time(topw->pb_pos,pos)) {
-		sprintf(timestamp,"%s / %s",pos,dur);
+	if(!ms_to_time(topw->pb_dur, &dur) && !ms_to_time(topw->pb_pos, &pos)) {
+		asprintf(&timestamp,"%s / %s",pos,dur);
 		gtk_label_set_text((GtkLabel *)topw->time_label,timestamp);
 	}
 }
@@ -143,13 +143,13 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
-	op_widget_osd_show(topw->op_widget, time);
+	top_widget_osd_show(topw, time);
 #endif
 #else
 	topw->pb_dur = (long long)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
-	op_widget_osd_show(topw->op_widget, ((GtkLabel *)topw->time_label)->label);
+	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);
 #endif
 #endif
 	return FALSE;
@@ -174,7 +174,7 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
-	op_widget_osd_show(topw->op_widget, time);
+	top_widget_osd_show(topw, time);
 #endif
 #else
 	adj->value += 10 * 1000 * 1000;
@@ -183,7 +183,7 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	topw->pb_dur = (long long)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
-	op_widget_osd_show(topw->op_widget, ((GtkLabel *)topw->time_label)->label);
+	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);
 #endif
 #endif
 	topw->should_uslider = TRUE;
@@ -205,7 +205,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
-	op_widget_osd_show(topw->op_widget, time);
+	top_widget_osd_show(topw, time);
 #endif
 #else
 	adj->value -= 10 * 1000 * 1000;
@@ -214,7 +214,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	topw->pb_dur = (long long)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
-	op_widget_osd_show(topw->op_widget, ((GtkLabel *)topw->time_label)->label);
+	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);
 #endif
 #endif
 	topw->should_uslider = TRUE;
@@ -228,9 +228,9 @@ static gboolean vol_up_clicked( GtkWidget *widget, gpointer data ) {
 	do_volume(volume.int_value);
 	settings_save(&volume);
 #ifndef NO_OSD
-	char osd_text[255];
-	sprintf(osd_text, "VOL: %d",volume.int_value);
-	op_widget_osd_show(topw->op_widget, osd_text);
+	char *osd_text;
+	asprintf(&osd_text, "VOL: %d",volume.int_value);
+	top_widget_osd_show(topw, osd_text);
 #endif
 	return FALSE;
 }
@@ -242,9 +242,9 @@ static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
 	do_volume(volume.int_value);
 	settings_save(&volume);
 #ifndef NO_OSD
-	char osd_text[255];
-	sprintf(osd_text, "VOL: %d",volume.int_value);
-	op_widget_osd_show(topw->op_widget, osd_text);
+	char *osd_text;
+	asprintf(&osd_text, "VOL: %d",volume.int_value);
+	top_widget_osd_show(topw, osd_text);
 #endif
 	return FALSE;
 }
@@ -253,7 +253,7 @@ static void pause_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_t *topw = (top_widget_t *)data;
 	topw->paused = topw->paused ? FALSE : TRUE;
 #ifndef NO_OSD
-	op_widget_osd_show(topw->op_widget, topw->paused ? "Paused" : "Playing");
+	top_widget_osd_show(topw, topw->paused ? "Paused" : "Playing");
 #endif
 	op_widget_toggle_playpause();
 }
@@ -302,20 +302,19 @@ int top_widget_set_video_path(top_widget_t *topw, char *path) {
 }
 
 void top_widget_play_path(top_widget_t *topw) {
-	char vpath[255];
+	char *vpath;
 	if(!topw->playlist) {
 		LOGE(TAG,"%s", "_playlist is NULL?");
 		return;
 	}
-	mp_get_current(topw->playlist, vpath);
+	vpath = mp_get_current(topw->playlist);
 	op_widget_play(topw->op_widget, vpath);
 	if(!topw->pb_pos_poll_running) {
 		pthread_create(&topw->pb_pos_poll_thread,NULL, &pb_pos_poll,topw); 
 	}
-	//sleep(1);
 	pthread_create(&topw->restore_volume_thread,NULL, &restore_volume,topw);
 #ifndef NO_OSD
-	op_widget_osd_show(topw->op_widget, basename(vpath));
+	top_widget_osd_show(topw, basename(vpath));
 #endif
 }
 

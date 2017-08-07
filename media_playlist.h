@@ -32,7 +32,7 @@ int is_media_by_ext(const char *path);
 media_playlist_t *mp_create();
 media_playlist_t *mp_create_dir_of_file(char * path);
 void mp_add(media_playlist_t *plist, char *full_path);
-void mp_get_current(media_playlist_t *plist, char * dest);
+char* mp_get_current(media_playlist_t *plist);
 void mp_move_next(media_playlist_t *plist);
 void mp_move_previous(media_playlist_t *plist);
 void mp_free(media_playlist_t *plist);

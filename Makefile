@@ -75,6 +75,7 @@ else
 endif
 
 COMMON_CFLAGS := \
+	-D_GNU_SOURCE \
 	-I/usr/include \
 	-I/usr/include/freetype2 \
 	-I/usr/include/dbus-1.0 \

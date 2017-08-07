@@ -25,9 +25,9 @@
 
 /* Convert microseconds to formated time HH:MM:SS
  */
-int ms_to_time(unsigned long ms, char * dest) {
+int ms_to_time(unsigned long ms, char **dest) {
 	if(ms >= 86400000000) {
-	fprintf(stderr, "Can not convert microseconds >= 24 hours\n");
+		fprintf(stderr, "Can not convert microseconds >= 24 hours\n");
 		return 1;
 	}
 	long hours = ms / 1000 / 1000 / 60 / 60;
@@ -39,7 +39,7 @@ int ms_to_time(unsigned long ms, char * dest) {
 	long seconds = ms / 1000 / 1000;
 	seconds = floor(seconds);
 
-	sprintf(dest,"%.2ld:%.2ld:%.2ld",hours,minutes,seconds);
+	asprintf(dest,"%.2ld:%.2ld:%.2ld",hours,minutes,seconds);
 	return 0;
 }
 
@@ -49,7 +49,7 @@ int main (int argc, char * argv[]) {
 	fprintf(stderr, "Forget something?\n");
 		return 1;
 	}
-	char dest[255];
+	char *dest;
 	unsigned long ms = (unsigned long)atol(argv[1]);
 
 	if(!ms_to_time(ms,dest))

@@ -32,14 +32,14 @@
 GKeyFile *key_file;
 GError *error;
 gsize length;
-char file[255];
-char dir[255];
+char *file;
+char *dir;
 
 void settings_init() {
 	char * home = getenv("HOME");
-	sprintf(dir,"%s/.tomxplayer", home);
+	asprintf(&dir,"%s/.tomxplayer", home);
 	mkdir(dir, 00775);
-	sprintf(file,"%s/tomxplayer.ini", dir);
+	asprintf(&file,"%s/tomxplayer.ini", dir);
 	LOGI(TAG, "Using settings file @ %s",file);
 	FILE * temp = fopen(file, "a");
 	fclose(temp);

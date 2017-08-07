@@ -151,6 +151,9 @@ void op_widget_set_pb_position(unsigned long pos) {
 }
 
 void op_widget_hidevideo() {
+#ifndef NO_OSD
+	tr_stop();
+#endif
 	opc_hidevideo();
 }
 
