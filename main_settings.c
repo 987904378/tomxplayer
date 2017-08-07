@@ -91,7 +91,7 @@ setting_t file_types = {
 	0,0,0,
 	SETTINGS_TYPE_STRING,
 	1,
-	"A separated list of file extentions to include in building a playlist from a directory.",
+	"A separated list of file extentions to include in building a playlist from a directory. Do not include '.'!",
 	NULL,
 	"",
 };

@@ -255,8 +255,6 @@ static void play_path() {
 	pthread_create(&restore_volume_thread,NULL, &restore_volume,NULL);
 }
 
-
-
 static void previous_clicked( GtkWidget *widget, gpointer data ) {
 	if(cont_pb.int_value) {
 		unsigned long pos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
@@ -517,12 +515,14 @@ static void init_settings() {
 	stretch.setting_update_cb = &stretch_updated;
 	settings_read(&stretch);
 	settings_read(&audio_out);
+	settings_read(&file_types);
 	audio_settings = list_create("Audio",2,1);
 	list_add_entry(&audio_settings,&volume);
 	list_add_entry(&audio_settings, &audio_out);
-	playback_settings = list_create("Playback",2,1);
+	playback_settings = list_create("Playback",3,1);
 	list_add_entry(&playback_settings, &cont_pb);
 	list_add_entry(&playback_settings, &stretch);
+	list_add_entry(&playback_settings, &file_types);
 }
 
 int main (int argc, char * argv[]) {
