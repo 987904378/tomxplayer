@@ -51,7 +51,7 @@ static void build_setting_viewer_header(GtkVBox *vbox, setting_t *setting) {
 }
 static void build_setting_viewer_footer(GtkVBox *vbox, setting_t *setting) {
 	GtkWidget *label_desc = gtk_label_new(setting->desc);
-	g_signal_connect((GtkObject *)vbox,"size-allocate",G_CALLBACK(setting_vbox_size_allocated), label_desc);
+	g_signal_connect((GObject *)vbox,"size-allocate",G_CALLBACK(setting_vbox_size_allocated), label_desc);
 	gtk_label_set_line_wrap ((GtkLabel *)label_desc, TRUE);
 	gtk_widget_set_size_request((GtkWidget *)label_desc,350, 0);
 #ifdef GTK3
@@ -79,7 +79,7 @@ static GtkWidget *gtk_string_setting_viewer_new(setting_t *setting) {
 	if(!setting->option_count) {
 		combo_or_entry = gtk_entry_new();
 		gtk_entry_set_text((GtkEntry *)combo_or_entry,setting->string_value);
-		g_signal_connect((GtkObject *)combo_or_entry,"changed",G_CALLBACK(entry_changed), setting);
+		g_signal_connect((GObject *)combo_or_entry,"changed",G_CALLBACK(entry_changed), setting);
 	} else {
 #ifdef GTK3	
 		combo_or_entry = gtk_combo_box_text_new_with_entry();
@@ -106,7 +106,7 @@ static GtkWidget *gtk_string_setting_viewer_new(setting_t *setting) {
 		GtkEntry *entry = GTK_ENTRY (GTK_BIN (combo_or_entry)->child);
 #endif
 		gtk_entry_set_text(entry,setting->string_value);
-		g_signal_connect((GtkObject *)entry,"changed",G_CALLBACK(entry_changed), setting);
+		g_signal_connect((GObject *)entry,"changed",G_CALLBACK(entry_changed), setting);
 	}
 	gtk_box_pack_start((GtkBox *)vbox, combo_or_entry, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
@@ -125,7 +125,7 @@ static GtkWidget *gtk_bool_setting_viewer_new(setting_t *setting) {
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
 	GtkWidget *checkbutton = gtk_check_button_new_with_label (setting->long_name);
 	gtk_toggle_button_set_active((GtkToggleButton *)checkbutton, (gboolean)setting->int_value);
-	g_signal_connect((GtkObject *)checkbutton,"toggled",G_CALLBACK(checkbutton_toggled), setting);
+	g_signal_connect((GObject *)checkbutton,"toggled",G_CALLBACK(checkbutton_toggled), setting);
 	gtk_box_pack_start((GtkBox *)vbox, checkbutton, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
 	gtk_widget_show_all(vbox);
@@ -143,7 +143,7 @@ static GtkWidget *gtk_int_setting_viewer_new(setting_t *setting) {
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
 	build_setting_viewer_header((GtkVBox *)vbox, setting);
 	GtkWidget *spinbutton = gtk_spin_button_new_with_range((gdouble)setting->min,(gdouble)setting->max, 1);
-	g_signal_connect((GtkObject *)spinbutton,"value-changed",G_CALLBACK(spinbutton_value_changed), setting);
+	g_signal_connect((GObject *)spinbutton,"value-changed",G_CALLBACK(spinbutton_value_changed), setting);
 	gtk_spin_button_set_value((GtkSpinButton *)spinbutton, setting->int_value);
 	gtk_box_pack_start((GtkBox *)vbox, spinbutton, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);

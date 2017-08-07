@@ -47,6 +47,10 @@
 #endif
 #define ICON_PATH RESOURCE_DIR"/tomxplayer.png"
 
+#ifdef GTK3
+GMainContext *context;
+#endif
+
 static GtkWidget * window;
 static GtkWidget *drawing_area;
 static GtkWidget *hscale;
@@ -80,7 +84,14 @@ static int pb_pos_poll_running = 0;
 static pthread_t fs_hide_controls_thread;
 static pthread_t restore_volume_thread;
 static pthread_t set_pb_position_thread;
-#ifndef GTK3
+#ifdef GTK3
+static GdkRGBA *form_orig;
+static GdkRGBA *label_orig;
+static GdkRGBA *toolbar_orig;
+static GdkRGBA *form_fs;
+static GdkRGBA *label_fs;
+static GdkRGBA *toolbar_fs;
+#else
 static GtkStyle *form_orig;
 static GtkStyle *label_orig;
 static GtkStyle *toolbar_orig;
@@ -102,9 +113,16 @@ static void show_controls() {
 	gtk_widget_show(top_controls);
 	gtk_widget_show(bottom_controls);
 }
+#ifdef GTK3
+static gboolean hide_controls(gpointer not_used) {
+#else
 static void hide_controls() {
+#endif
 	gtk_widget_hide(top_controls);
 	gtk_widget_hide(bottom_controls);
+#if GTK3
+	return FALSE;
+#endif
 }
 
 static void destroy( GtkWidget *widget, gpointer data ) {
@@ -186,9 +204,13 @@ static void * timed_hide_controls(void * arg) {
 	}
 	if(_fullscreen) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+#ifdef GTK3
+		g_main_context_invoke(context, &hide_controls, NULL);
+#else
 		gdk_threads_enter();
 		hide_controls();
 		gdk_threads_leave();
+#endif
 	}
 	return NULL;
 }
@@ -215,7 +237,8 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 #ifdef GTK3
 	update_pb_position_ui((long long)newval, (long long)gtk_adjustment_get_upper(adj));
 #ifndef x86
-	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
+	tr_show_thread(time);
 #endif
 #else
 	update_pb_position_ui((long long)newval, (long long)adj->upper);
@@ -235,7 +258,8 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef x86
-	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
+	tr_show_thread(time);
 #endif
 #else
 	adj->value += 10 * 1000 * 1000;
@@ -258,7 +282,8 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef x86
-	tr_show_thread(gtk_label_get_text((GtkLabel *)time_label));
+	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
+	tr_show_thread(time);
 #endif
 #else
 	adj->value -= 10 * 1000 * 1000;
@@ -339,6 +364,15 @@ static void * restore_volume(void * arg) {
 	return NULL;
 }
 
+#ifdef GTK3
+static gboolean update_pb_position_ui_gtk3(gpointer pb_pos) {
+	long long pos = ((long long *)pb_pos)[1];
+	long long dur = ((long long *)pb_pos)[0];
+	update_pb_position_ui(pos, dur);
+	return FALSE;
+}
+#endif
+
 static void *pb_pos_poll(void * arg) {
 	long long pb_pos[2];
 	pthread_detach(pthread_self());
@@ -354,9 +388,13 @@ static void *pb_pos_poll(void * arg) {
 			break;
 		if(opc_status(pb_pos) || !_should_uslider || !opc_is_running())
 			continue;
+#ifdef GTK3
+		g_main_context_invoke(context, &update_pb_position_ui_gtk3, (void *)pb_pos);
+#else
 		gdk_threads_enter();
 		update_pb_position_ui(pb_pos[1], pb_pos[0]);
 		gdk_threads_leave();
+#endif
 	}
 	pb_pos_poll_running = 0;
 	return NULL;
@@ -488,13 +526,41 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		gtk_widget_set_style(vol_controls, toolbar_fs);
 		gtk_widget_set_style(time_label, label_fs);
 		gtk_widget_set_style(volume_label, label_fs);
-#endif
 		hide_controls();
+#else
+		gtk_style_context_get_property (gtk_widget_get_style_context (window), GTK_STYLE_PROPERTY_BACKGROUND_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)form_orig);
+		gtk_style_context_get_property (gtk_widget_get_style_context (top_toolbar), GTK_STYLE_PROPERTY_BACKGROUND_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)toolbar_orig);
+		gtk_style_context_get_property (gtk_widget_get_style_context (time_label), GTK_STYLE_PROPERTY_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)label_orig);
+		GdkRGBA black;
+		black.red = 0;
+		black.green = 0;
+		black.blue = 0;
+		black.alpha = 1;
+		GdkRGBA white;
+		white.red = 1;
+		white.green = 1;
+		white.blue = 1;
+		white.alpha = 1;
+		gtk_widget_override_background_color(window,GTK_STATE_NORMAL, &black);
+		gtk_widget_override_background_color(top_toolbar,GTK_STATE_NORMAL, &black);
+		gtk_widget_override_background_color(pb_controls,GTK_STATE_NORMAL, &black);
+		gtk_widget_override_background_color(vol_controls,GTK_STATE_NORMAL, &black);
+		gtk_widget_override_color(time_label,GTK_STATE_NORMAL, &white);
+		gtk_widget_override_color(volume_label,GTK_STATE_NORMAL, &white);
+		hide_controls(NULL);
+#endif
 		_fullscreen = TRUE;
 	} else {
 		_fullscreen = FALSE;
 		gtk_window_unfullscreen((GtkWindow *)window);
-#ifndef GTK3
+#ifdef GTK3
+		gtk_widget_override_background_color(window,GTK_STATE_NORMAL, form_orig);
+		gtk_widget_override_background_color(top_toolbar,GTK_STATE_NORMAL, toolbar_orig);
+		gtk_widget_override_background_color(pb_controls,GTK_STATE_NORMAL, toolbar_orig);
+		gtk_widget_override_background_color(vol_controls,GTK_STATE_NORMAL, toolbar_orig);
+		gtk_widget_override_color(time_label,GTK_STATE_NORMAL, label_orig);
+		gtk_widget_override_color(volume_label,GTK_STATE_NORMAL, label_orig);
+#else
 		gtk_widget_set_style(window, form_orig);
 		gtk_widget_set_style(top_toolbar, toolbar_orig);
 		gtk_widget_set_style(pb_controls, toolbar_orig);
@@ -627,7 +693,7 @@ static void build_drawing_area(GtkBox *vbox) {
 	black.blue = 0;
 	drawing_area = gtk_drawing_area_new();
 	gtk_widget_modify_bg(drawing_area,GTK_STATE_NORMAL, &black);
-	g_signal_connect((GtkObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);
+	g_signal_connect((GObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);
 	gtk_box_pack_start((GtkBox *)vbox,drawing_area,TRUE,TRUE,0);
 }
 
@@ -636,19 +702,19 @@ static void build_top_toolbar(GtkBox *vbox) {
 	top_toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_show_arrow((GtkToolbar *)top_toolbar,FALSE);
 	GtkToolItem *file_open = gtk_tool_button_new_from_stock("gtk-open");
-	g_signal_connect((GtkObject *)file_open,"clicked",G_CALLBACK(file_open_clicked),NULL);
+	g_signal_connect((GObject *)file_open,"clicked",G_CALLBACK(file_open_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,file_open, 0);
 
 	GtkToolItem *fullscreen = gtk_toggle_tool_button_new_from_stock("gtk-fullscreen");
-	g_signal_connect((GtkObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
+	g_signal_connect((GObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,fullscreen, 1);
 
 	GtkToolItem *preferences = gtk_tool_button_new_from_stock("gtk-properties");
-	g_signal_connect((GtkObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
+	g_signal_connect((GObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar, preferences, 2);
 
 	GtkToolItem *about = gtk_tool_button_new_from_stock("gtk-about");
-	g_signal_connect((GtkObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
+	g_signal_connect((GObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar, about, 3);
 
 	gtk_box_pack_start((GtkBox *)top_controls, top_toolbar, FALSE, FALSE, 0);
@@ -662,23 +728,23 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 	gtk_toolbar_set_show_arrow((GtkToolbar *)pb_controls,FALSE);
 
 	GtkToolItem *previous = gtk_tool_button_new_from_stock("gtk-media-previous");
-	g_signal_connect((GtkObject *)previous,"clicked",G_CALLBACK(previous_clicked),NULL);
+	g_signal_connect((GObject *)previous,"clicked",G_CALLBACK(previous_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,previous, 0);
 
 	GtkToolItem *rewind = gtk_tool_button_new_from_stock("gtk-media-rewind");
-	g_signal_connect((GtkObject *)rewind,"clicked",G_CALLBACK(rewind_clicked),NULL);
+	g_signal_connect((GObject *)rewind,"clicked",G_CALLBACK(rewind_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,rewind, 1);
 
 	GtkToolItem *pause = gtk_toggle_tool_button_new_from_stock("gtk-media-pause");
-	g_signal_connect((GtkObject *)pause,"clicked",G_CALLBACK(pause_clicked),NULL);
+	g_signal_connect((GObject *)pause,"clicked",G_CALLBACK(pause_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,pause, 2);
 
 	GtkToolItem *ff = gtk_tool_button_new_from_stock("gtk-media-forward");
-	g_signal_connect((GtkObject *)ff,"clicked",G_CALLBACK(ff_clicked),NULL);
+	g_signal_connect((GObject *)ff,"clicked",G_CALLBACK(ff_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,ff, 3);
 
 	GtkToolItem *next = gtk_tool_button_new_from_stock("gtk-media-next");
-	g_signal_connect((GtkObject *)next,"clicked",G_CALLBACK(next_clicked),NULL);
+	g_signal_connect((GObject *)next,"clicked",G_CALLBACK(next_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,next, 4);
 
 	gtk_box_pack_start((GtkBox *)bottom_controls, pb_controls, FALSE, FALSE, 0);
@@ -692,7 +758,7 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 
 	hscale = gtk_hscale_new_with_range(0,100,1);
 	gtk_scale_set_draw_value((GtkScale *)hscale,FALSE);
-	g_signal_connect((GtkObject *)hscale,"change-value",G_CALLBACK(hscale_change_value),NULL);
+	g_signal_connect((GObject *)hscale,"change-value",G_CALLBACK(hscale_change_value),NULL);
 	gtk_box_pack_start((GtkBox *)bottom_controls, hscale, TRUE, TRUE, 0);
 
 	gtk_box_pack_start((GtkBox *)bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
@@ -705,11 +771,11 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 	gtk_toolbar_set_show_arrow((GtkToolbar *)vol_controls,FALSE);
 
 	GtkToolItem *vol_up = gtk_tool_button_new_from_stock("gtk-go-up");
-	g_signal_connect((GtkObject *)vol_up,"clicked",G_CALLBACK(vol_up_clicked),NULL);
+	g_signal_connect((GObject *)vol_up,"clicked",G_CALLBACK(vol_up_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_up, 0);
 
 	GtkToolItem *vol_down = gtk_tool_button_new_from_stock("gtk-go-down");
-	g_signal_connect((GtkObject *)vol_down,"clicked",G_CALLBACK(vol_down_clicked),NULL);
+	g_signal_connect((GObject *)vol_down,"clicked",G_CALLBACK(vol_down_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_down, 1);
 
 	gtk_box_pack_end((GtkBox *)bottom_controls,vol_controls,FALSE,FALSE,0);
@@ -792,6 +858,11 @@ static void init_settings() {
 
 }
 
+//static gboolean test_thread(gpointer p) {
+//	LOGD(TAG, "%s", "test_thread");
+//	return TRUE;
+//}
+
 int main (int argc, char * argv[]) {
 	int opt;
 	while ((opt = getopt(argc, argv, "v")) != -1) {
@@ -804,7 +875,11 @@ int main (int argc, char * argv[]) {
 	}
 	GError *gerr = NULL;
 	gtk_init(0 ,NULL);
+#ifdef GTK3
+	context = g_main_context_default();
+#else
 	gdk_threads_init();
+#endif
 	init_settings();
 #ifndef x86
 	tr_init();
@@ -819,15 +894,15 @@ int main (int argc, char * argv[]) {
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
-	g_signal_connect((GtkObject *)window, "destroy",G_CALLBACK(destroy), NULL);
-	g_signal_connect((GtkObject *)window, "configure-event", G_CALLBACK(window_configure_event),NULL);
-	g_signal_connect((GtkObject *)window, "window-state-event", G_CALLBACK(event_window_state),NULL);
-	g_signal_connect((GtkObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
-	g_signal_connect((GtkObject *)window, "key-press-event", G_CALLBACK(window_key_press_event),NULL);
-	g_signal_connect((GtkObject *)window, "key-release-event", G_CALLBACK(window_key_release_event),NULL);
-	g_signal_connect((GtkObject *)window, "focus-in-event", G_CALLBACK(window_focus_in_event),NULL);
-	g_signal_connect((GtkObject *)window, "focus-out-event", G_CALLBACK(window_focus_out_event),NULL);
-	g_signal_connect((GtkObject *)window, "realize", G_CALLBACK(window_realize),NULL);
+	g_signal_connect((GObject *)window, "destroy",G_CALLBACK(destroy), NULL);
+	g_signal_connect((GObject *)window, "configure-event", G_CALLBACK(window_configure_event),NULL);
+	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),NULL);
+	g_signal_connect((GObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
+	g_signal_connect((GObject *)window, "key-press-event", G_CALLBACK(window_key_press_event),NULL);
+	g_signal_connect((GObject *)window, "key-release-event", G_CALLBACK(window_key_release_event),NULL);
+	g_signal_connect((GObject *)window, "focus-in-event", G_CALLBACK(window_focus_in_event),NULL);
+	g_signal_connect((GObject *)window, "focus-out-event", G_CALLBACK(window_focus_out_event),NULL);
+	g_signal_connect((GObject *)window, "realize", G_CALLBACK(window_realize),NULL);
 	gtk_window_set_default_size((GtkWindow *)window, 640, 360);
 	//gtk_container_set_resize_mode((GtkContainer *)window,GTK_RESIZE_IMMEDIATE);
 	GtkWidget *vbox = gtk_vbox_new(0, 0); 

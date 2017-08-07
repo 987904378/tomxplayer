@@ -71,7 +71,7 @@ preference_dialog_t *gtk_preference_dialog_new(GtkWindow * parent) {
 								NULL);
 	gtk_window_set_default_size((GtkWindow *)temp->window, 640, 480);
 	gtk_widget_set_events((GtkWidget *)temp->window, GDK_ALL_EVENTS_MASK);
-	g_signal_connect((GtkObject *)temp->window,"show",G_CALLBACK(preference_dialog_on_show), NULL);
+	g_signal_connect((GObject *)temp->window,"show",G_CALLBACK(preference_dialog_on_show), NULL);
 	GtkWidget *hbox = gtk_hbox_new(FALSE,6);
 #ifdef GTK3
 	gtk_box_pack_start((GtkBox *)gtk_dialog_get_content_area ((GtkDialog *) temp->window),hbox,TRUE,TRUE,0);
@@ -79,7 +79,7 @@ preference_dialog_t *gtk_preference_dialog_new(GtkWindow * parent) {
 	gtk_container_add((GtkContainer *)((GtkDialog *)temp->window)->vbox, hbox);
 #endif 
 	temp->settings_treeview = gtk_settings_treeview_new();
-	g_signal_connect((GtkObject *)temp->settings_treeview->treeview,"cursor-changed",G_CALLBACK(treeview_cursor_changed), temp);
+	g_signal_connect((GObject *)temp->settings_treeview->treeview,"cursor-changed",G_CALLBACK(treeview_cursor_changed), temp);
 	gtk_widget_set_size_request(temp->settings_treeview->this, 200, -1);
 	gtk_box_pack_start((GtkBox *)hbox, temp->settings_treeview->this, FALSE, FALSE, 0);
 	temp->setting_list_view = gtk_setting_list_view_new();

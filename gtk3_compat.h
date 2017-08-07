@@ -20,13 +20,8 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <gtk/gtk.h>
-#define GtkObject GObject
-#define gtk_signal_connect g_signal_connect
 #define gtk_vbox_new(x, y) gtk_box_new(1,y);
 #define gtk_hbox_new(x, y) gtk_box_new(0,y);
-//#define gdk_threads_init() while(0)
-//#define gdk_threads_enter() while(0)
-//#define gdk_threads_leave() while(0)
 #define gtk_tool_button_new_from_stock new_stock_id_tool_button
 #define gtk_toggle_tool_button_new_from_stock new_stock_id_toggle_tool_button
 #define gtk_hseparator_new() gtk_separator_new (0)
