@@ -28,44 +28,42 @@
 #include "log.h"
 #include "main_settings.h"
 #include "op_dbus.h"
+#include <sys/types.h>
 
 #define TAG "op_control"
 
 int pos[4];
 char *file_name;
 int is_running = 0;
-pthread_t update_thread;
+pthread_t thread;
 
 void opc_stop_omxplayer() {
-	op_dbus_send_stop();
-	/* TODO: We should only kill our own instance but
-	 * we can't handle that yet. Multiple instances
-	 * of either tomxplayer or omxplayer causes problems.
-	 *	popen?
-	 */
-	system("killall omxplayer 2>&1 > /dev/null");
-	system("killall omxplayer.bin 2>&1 > /dev/null");
+	if(is_running) {
+		op_dbus_send_stop();
+		pthread_cancel(thread);
+	}
 }
 
 static void *start_omxplayer_system(void *arg) {
 	char cmd[255];
-	opc_stop_omxplayer(); 
 	is_running = 1;
-	sprintf(cmd, "omxplayer --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1 > /dev/null", 
+	sprintf(cmd, "omxplayer --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1 > /dev/null",
+	getpid(),
 	audio_out.string_value,
 	stretch.int_value ? "stretch": "Letterbox", 
 	pos[0],pos[1],pos[2],pos[3], file_name);
 	system(cmd);
 	is_running = 0;
+	return NULL;
 }
 
 void opc_start_omxplayer_thread(int tpos[], char * tfile_name) {
+	opc_stop_omxplayer();
 	pos[0] = tpos[0];
 	pos[1] = tpos[1];
 	pos[2] = tpos[2];
 	pos[3] = tpos[3];
 	file_name = strdup(tfile_name);
-	pthread_t thread;
 	pthread_attr_t attr; 
 	pthread_attr_init(&attr);
 	pthread_create(&thread,&attr,&start_omxplayer_system,NULL);

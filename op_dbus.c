@@ -79,14 +79,17 @@ static int create_connection(DBusConnection **connection) {
 }
 
 static int prep_message(DBusMessage **message, DBusMessageIter *iter, char *name, char *method) {
+	char dest[255];
 	*message = dbus_message_new_method_call(NULL, MPRIS_PATH, name, method);
 	if(message == NULL) {
 		LOGE(TAG,"%s","Could not create message");
 		return 1;
 	}
+	sprintf(dest,"%s%d",MPRIS_DEST,getpid());
 	dbus_message_set_auto_start(*message, TRUE);
- 	dbus_message_set_destination (*message, MPRIS_DEST);
- 	dbus_message_iter_init_append (*message, iter);
+	dbus_message_set_destination (*message, dest);
+	dbus_message_iter_init_append (*message, iter);
+	return 0;
 }
 
 static int send_message(char* name, char * method, list_t *args, void *reply_value) {
