@@ -4,11 +4,17 @@ CONF=$1
 HOME_PATH=$PWD
 VERSION=0
 SIZE=0
-
+DEPS="";
 add_sizeof_file() {
 	THISSIZE=$(ls -la --block-size=1024 $1 | cut -d ' ' -f5)
 	SIZE=$(expr $SIZE + $THISSIZE)
 }
+
+if [[ "$CONF" == "raspi" ]]; then
+	DEPS="libgtk2.0-0 (>= 2.0), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
+else
+	DEPS="libgtk-3-0 (>=3.18), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
+fi
 
 VERSION=$(./tomxplayer.bin -v)
 echo tomxplayer version $VERSION
@@ -29,7 +35,7 @@ cp -v tomxplayer $INT_DIR/usr/bin
 add_sizeof_file tomxplayer
 cp -v tomxplayer.bin $INT_DIR/usr/bin
 add_sizeof_file tomxplayer.bin
-cat DEBIAN/control | sed "s/%version%/$VERSION-$CONF/g" | sed "s/%size%/$SIZE/g"  > $INT_DIR/DEBIAN/control
+cat DEBIAN/control | sed "s/%version%/$VERSION-$CONF/g" | sed "s/%size%/$SIZE/g" | sed "s/%deps%/$DEPS/g" > $INT_DIR/DEBIAN/control
 
 remove_old_builds() {
 	cd $HOME_PATH/out
