@@ -87,9 +87,8 @@ static pthread_t fs_hide_controls_thread;
 static pthread_t restore_volume_thread;
 static pthread_t set_pb_position_thread;
 #ifdef GTK3
-static GdkRGBA *form_orig;
-static GdkRGBA *label_orig;
-static GdkRGBA *toolbar_orig;
+static GtkCssProvider *fs_css_provider;
+static const char *fs_css = "GtkWindow, GtkToolbar, GtkLabel, GtkDrawingArea { background: #000000; color: #FFFFFF; }";
 #else
 static GtkStyle *form_orig;
 static GtkStyle *label_orig;
@@ -547,25 +546,14 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		gtk_widget_set_style(volume_label, label_fs);
 		hide_controls();
 #else
-		gtk_style_context_get_property (gtk_widget_get_style_context (window), GTK_STYLE_PROPERTY_BACKGROUND_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)form_orig);
-		gtk_style_context_get_property (gtk_widget_get_style_context (top_toolbar), GTK_STYLE_PROPERTY_BACKGROUND_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)toolbar_orig);
-		gtk_style_context_get_property (gtk_widget_get_style_context (time_label), GTK_STYLE_PROPERTY_COLOR, GTK_STATE_FLAG_NORMAL, (GValue *)label_orig);
-		GdkRGBA black;
-		black.red = 0;
-		black.green = 0;
-		black.blue = 0;
-		black.alpha = 1;
-		GdkRGBA white;
-		white.red = 1;
-		white.green = 1;
-		white.blue = 1;
-		white.alpha = 1;
-		gtk_widget_override_background_color(window,GTK_STATE_NORMAL, &black);
-		gtk_widget_override_background_color(top_toolbar,GTK_STATE_NORMAL, &black);
-		gtk_widget_override_background_color(pb_controls,GTK_STATE_NORMAL, &black);
-		gtk_widget_override_background_color(vol_controls,GTK_STATE_NORMAL, &black);
-		gtk_widget_override_color(time_label,GTK_STATE_NORMAL, &white);
-		gtk_widget_override_color(volume_label,GTK_STATE_NORMAL, &white);
+		gtk_style_context_add_provider
+				(gtk_widget_get_style_context((GtkWidget *)window),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+		gtk_style_context_add_provider
+				(gtk_widget_get_style_context((GtkWidget *)top_toolbar),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+		gtk_style_context_add_provider
+				(gtk_widget_get_style_context((GtkWidget *)pb_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+		gtk_style_context_add_provider
+				(gtk_widget_get_style_context((GtkWidget *)vol_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 		hide_controls(NULL);
 #endif
 		_fullscreen = TRUE;
@@ -573,12 +561,10 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		_fullscreen = FALSE;
 		gtk_window_unfullscreen((GtkWindow *)window);
 #ifdef GTK3
-		gtk_widget_override_background_color(window,GTK_STATE_NORMAL, form_orig);
-		gtk_widget_override_background_color(top_toolbar,GTK_STATE_NORMAL, toolbar_orig);
-		gtk_widget_override_background_color(pb_controls,GTK_STATE_NORMAL, toolbar_orig);
-		gtk_widget_override_background_color(vol_controls,GTK_STATE_NORMAL, toolbar_orig);
-		gtk_widget_override_color(time_label,GTK_STATE_NORMAL, label_orig);
-		gtk_widget_override_color(volume_label,GTK_STATE_NORMAL, label_orig);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)window),(GtkStyleProvider *)fs_css_provider);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)top_toolbar),(GtkStyleProvider *)fs_css_provider);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)pb_controls),(GtkStyleProvider *)fs_css_provider);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)vol_controls),(GtkStyleProvider *)fs_css_provider);
 #else
 		gtk_widget_set_style(window, form_orig);
 		gtk_widget_set_style(top_toolbar, toolbar_orig);
@@ -727,12 +713,20 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 }
 
 static void build_drawing_area(GtkBox *vbox) {
+	drawing_area = gtk_drawing_area_new();
+#ifdef GTK3
+	GError *gerr = NULL;
+	fs_css_provider = gtk_css_provider_new();
+	gtk_css_provider_load_from_data (fs_css_provider, fs_css, strlen(fs_css), &gerr);
+	gtk_style_context_add_provider
+			(gtk_widget_get_style_context((GtkWidget *)drawing_area),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+#else
 	GdkColor black;
 	black.red = 0;
 	black.green = 0;
 	black.blue = 0;
-	drawing_area = gtk_drawing_area_new();
 	gtk_widget_modify_bg(drawing_area,GTK_STATE_NORMAL, &black);
+#endif
 	g_signal_connect((GObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);	
 	gtk_box_pack_start((GtkBox *)vbox,drawing_area,TRUE,TRUE,0);
 }
