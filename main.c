@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include "version.h"
+#include "time_utils.h"
 
 #define TAG "main"
 

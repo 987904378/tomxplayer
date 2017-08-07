@@ -48,6 +48,7 @@
     <None Include="op_dbus.h" />
     <None Include="media_playlist.h" />
     <None Include="version.h" />
+    <None Include="time_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="list.c" />
