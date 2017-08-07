@@ -22,6 +22,9 @@
 #ifndef OP_CONTROL_H
 #define OP_CONTROL_H
 
+typedef void (* opc_playback_completed_func) (int exit_code, void *user_data);
+
+void opc_register_playback_completed(opc_playback_completed_func cb, void *user_data);
 void opc_start_omxplayer_thread(int pos[], char * file_name);
 void opc_update_pos(int pos[]);
 void opc_set_pb_position(unsigned long pos);

@@ -23,6 +23,7 @@
 
 #include <gtk/gtk.h>
 #include <pthread.h>
+#include "op_control.h"
 
 typedef struct {
 	GtkWidget *drawing_area;

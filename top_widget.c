@@ -80,10 +80,6 @@ static void *pb_pos_poll(void * arg) {
 	while(!topw->pb_pos_poll_cancel) {
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 		usleep(950 * 1000);
-		if(!op_widget_is_running() && cont_pb.int_value && !topw->pb_pos_poll_cancel) {
-			mp_move_next(topw->playlist);
-			top_widget_play_path(topw);
-		}
 		if(topw->pb_pos_poll_cancel)
 			break;
 		if(op_widget_status(pb_pos) || !topw->should_uslider || !op_widget_is_running())
@@ -281,6 +277,24 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 	}
 }
 
+static void playback_ended(int exit_code, void *user_data) {
+	LOGD(TAG, "Playback ended with code %d", exit_code);
+	top_widget_t *topw = (top_widget_t *)user_data;
+	if(exit_code) {
+#ifndef NO_OSD
+		char *text;
+		asprintf(&text, "Opps! %d exit code running omxplayer.",exit_code);
+		top_widget_osd_show(topw, text);
+		free(text);
+#endif
+		sleep(5);
+	}
+	if(cont_pb.int_value) {
+		mp_move_next(topw->playlist);
+		top_widget_play_path(topw);
+	}
+}
+
 int top_widget_set_video_path(top_widget_t *topw, char *path) {
 	int is_http = !strncmp(path,"http://",7) || !strncmp(path,"https://",8);
 	FILE * fd = fopen(path,"r");
@@ -443,6 +457,8 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	gtk_box_pack_end((GtkBox *)temp->bottom_controls, temp->volume_label, FALSE, FALSE, 0);
 
 	gtk_box_pack_end((GtkBox *)temp->widget, temp->bottom_controls, FALSE, FALSE, 0);
+
+	opc_register_playback_completed(playback_ended, temp);
 
 	temp->playlist = NULL;
 	temp->paused = FALSE;

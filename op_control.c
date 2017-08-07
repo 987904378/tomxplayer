@@ -37,7 +37,14 @@ static char *file_name;
 static int is_running = 0;
 static pthread_t thread;
 static int hidden = 0;
+static opc_playback_completed_func playback_completed_cb;
+static void *playback_completed_user_data;
 
+
+void opc_register_playback_completed(opc_playback_completed_func cb, void *user_data) {
+	playback_completed_cb = cb;
+	playback_completed_user_data = user_data;
+}
 void opc_stop_omxplayer() {
 	if(is_running) {
 		op_dbus_send_stop();
@@ -64,10 +71,11 @@ static void *start_omxplayer_system(void *arg) {
 	pos[2] + arb_x_offset.int_value,
 	pos[3] + arb_y_offset.int_value,
 	file_name);
-	LOGD(TAG, "cmd length = %d / max = 1024", strlen(cmd));
 	LOGD(TAG, "starting omxplayer: %s",cmd);
-	system(cmd);
+	ret = system(cmd);
+	free(cmd);
 	is_running = 0;
+	if(playback_completed_cb != NULL) { playback_completed_cb(ret, playback_completed_user_data); }
 	return NULL;
 }
 
