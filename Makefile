@@ -75,7 +75,6 @@ else
 endif
 
 COMMON_CFLAGS := \
-	-DVERSION=\"$(shell ./version.sh)\" \
 	-I/usr/include \
 	-I/usr/include/freetype2 \
 	-I/usr/include/dbus-1.0 \
@@ -172,6 +171,7 @@ GTK2_ALL_LDFLAGS := \
 	$(COMMON_LDFLAGS)
 
 RASPBIAN_CFLAGS := \
+	-DVERSION=\"$(shell ./version.sh)-raspi\" \
 	-DPOLLWINPOS \
 	$(GTK2_ALL_CFLAGS)
 
@@ -179,6 +179,7 @@ RASPBIAN_LDFLAGS := \
 	$(GTK2_ALL_LDFLAGS)
 
 MATE_CFLAGS := \
+	-DVERSION=\"$(shell ./version.sh)-mate\" \
 	-DUSE_SIGHANDLER \
 	$(GTK3_ALL_CFLAGS)
 

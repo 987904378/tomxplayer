@@ -11,9 +11,9 @@ add_sizeof_file() {
 }
 
 if [[ "$CONF" == "raspi" ]]; then
-	DEPS="libgtk2.0-0 (>= 2.0), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
+	DEPS="libgtk2.0-0 (>= 2.0), libdbus-1-3 (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
 else
-	DEPS="libgtk-3-0 (>=3.18), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
+	DEPS="libgtk-3-0 (>=3.18), libdbus-1-3 (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)"
 fi
 
 VERSION=$(./tomxplayer.bin -v)
@@ -49,7 +49,7 @@ create_deb() {
 	cd $HOME_PATH
 
 	mkdir -p out/
-	mv -v /tmp/tomxplayer_$VERSION.deb out/tomxplayer_$VERSION-$CONF.deb
+	mv -v /tmp/tomxplayer_$VERSION.deb out/tomxplayer_$VERSION.deb
 
 }
 
