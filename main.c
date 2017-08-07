@@ -513,8 +513,18 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 			"Open File", 
 			(GtkWindow *)window,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
-			GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-			GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+#ifdef GTK3
+			"_Cancel",
+#else
+			GTK_STOCK_CANCEL,
+#endif
+			GTK_RESPONSE_CANCEL,
+#ifdef GTK3
+			"_Open",
+#else
+			GTK_STOCK_OPEN,
+#endif 
+			GTK_RESPONSE_ACCEPT,
 			NULL);
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT) {
 		char *filename;
@@ -626,19 +636,19 @@ static void build_top_toolbar(GtkBox *vbox) {
 	top_toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_show_arrow((GtkToolbar *)top_toolbar,FALSE);
 	GtkToolItem *file_open = gtk_tool_button_new_from_stock("gtk-open");
-	gtk_signal_connect((GtkObject *)file_open,"clicked",G_CALLBACK(file_open_clicked),NULL);
+	g_signal_connect((GtkObject *)file_open,"clicked",G_CALLBACK(file_open_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,file_open, 0);
 
 	GtkToolItem *fullscreen = gtk_toggle_tool_button_new_from_stock("gtk-fullscreen");
-	gtk_signal_connect((GtkObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
+	g_signal_connect((GtkObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,fullscreen, 1);
 
 	GtkToolItem *preferences = gtk_tool_button_new_from_stock("gtk-properties");
-	gtk_signal_connect((GtkObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
+	g_signal_connect((GtkObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar, preferences, 2);
 
 	GtkToolItem *about = gtk_tool_button_new_from_stock("gtk-about");
-	gtk_signal_connect((GtkObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
+	g_signal_connect((GtkObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar, about, 3);
 
 	gtk_box_pack_start((GtkBox *)top_controls, top_toolbar, FALSE, FALSE, 0);
@@ -652,23 +662,23 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 	gtk_toolbar_set_show_arrow((GtkToolbar *)pb_controls,FALSE);
 
 	GtkToolItem *previous = gtk_tool_button_new_from_stock("gtk-media-previous");
-	gtk_signal_connect((GtkObject *)previous,"clicked",G_CALLBACK(previous_clicked),NULL);
+	g_signal_connect((GtkObject *)previous,"clicked",G_CALLBACK(previous_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,previous, 0);
 
 	GtkToolItem *rewind = gtk_tool_button_new_from_stock("gtk-media-rewind");
-	gtk_signal_connect((GtkObject *)rewind,"clicked",G_CALLBACK(rewind_clicked),NULL);
+	g_signal_connect((GtkObject *)rewind,"clicked",G_CALLBACK(rewind_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,rewind, 1);
 
 	GtkToolItem *pause = gtk_toggle_tool_button_new_from_stock("gtk-media-pause");
-	gtk_signal_connect((GtkObject *)pause,"clicked",G_CALLBACK(pause_clicked),NULL);
+	g_signal_connect((GtkObject *)pause,"clicked",G_CALLBACK(pause_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,pause, 2);
 
 	GtkToolItem *ff = gtk_tool_button_new_from_stock("gtk-media-forward");
-	gtk_signal_connect((GtkObject *)ff,"clicked",G_CALLBACK(ff_clicked),NULL);
+	g_signal_connect((GtkObject *)ff,"clicked",G_CALLBACK(ff_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,ff, 3);
 
 	GtkToolItem *next = gtk_tool_button_new_from_stock("gtk-media-next");
-	gtk_signal_connect((GtkObject *)next,"clicked",G_CALLBACK(next_clicked),NULL);
+	g_signal_connect((GtkObject *)next,"clicked",G_CALLBACK(next_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)pb_controls,next, 4);
 
 	gtk_box_pack_start((GtkBox *)bottom_controls, pb_controls, FALSE, FALSE, 0);
@@ -682,7 +692,7 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 
 	hscale = gtk_hscale_new_with_range(0,100,1);
 	gtk_scale_set_draw_value((GtkScale *)hscale,FALSE);
-	gtk_signal_connect((GtkObject *)hscale,"change-value",G_CALLBACK(hscale_change_value),NULL);
+	g_signal_connect((GtkObject *)hscale,"change-value",G_CALLBACK(hscale_change_value),NULL);
 	gtk_box_pack_start((GtkBox *)bottom_controls, hscale, TRUE, TRUE, 0);
 
 	gtk_box_pack_start((GtkBox *)bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
@@ -695,11 +705,11 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 	gtk_toolbar_set_show_arrow((GtkToolbar *)vol_controls,FALSE);
 
 	GtkToolItem *vol_up = gtk_tool_button_new_from_stock("gtk-go-up");
-	gtk_signal_connect((GtkObject *)vol_up,"clicked",G_CALLBACK(vol_up_clicked),NULL);
+	g_signal_connect((GtkObject *)vol_up,"clicked",G_CALLBACK(vol_up_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_up, 0);
 
 	GtkToolItem *vol_down = gtk_tool_button_new_from_stock("gtk-go-down");
-	gtk_signal_connect((GtkObject *)vol_down,"clicked",G_CALLBACK(vol_down_clicked),NULL);
+	g_signal_connect((GtkObject *)vol_down,"clicked",G_CALLBACK(vol_down_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_down, 1);
 
 	gtk_box_pack_end((GtkBox *)bottom_controls,vol_controls,FALSE,FALSE,0);

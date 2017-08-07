@@ -62,12 +62,16 @@ preference_dialog_t *gtk_preference_dialog_new(GtkWindow * parent) {
 								"Preferences",
 								parent, 
 								GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-								GTK_STOCK_OK, 
+#ifdef GTK3
+								"_OK",
+#else
+								GTK_STOCK_OK,
+#endif
 								GTK_RESPONSE_ACCEPT,
 								NULL);
 	gtk_window_set_default_size((GtkWindow *)temp->window, 640, 480);
 	gtk_widget_set_events((GtkWidget *)temp->window, GDK_ALL_EVENTS_MASK);
-	gtk_signal_connect((GtkObject *)temp->window,"show",G_CALLBACK(preference_dialog_on_show), NULL);
+	g_signal_connect((GtkObject *)temp->window,"show",G_CALLBACK(preference_dialog_on_show), NULL);
 	GtkWidget *hbox = gtk_hbox_new(FALSE,6);
 #ifdef GTK3
 	gtk_box_pack_start((GtkBox *)gtk_dialog_get_content_area ((GtkDialog *) temp->window),hbox,TRUE,TRUE,0);
