@@ -93,6 +93,7 @@ static int prep_message(DBusMessage **message, DBusMessageIter *iter, char *name
 }
 
 static int send_message(char* name, char * method, list_t *args, void *reply_value) {
+	int ret = 0;
 	DBusError error;
 	DBusConnection *connection;
   	DBusMessage *message;
@@ -130,6 +131,7 @@ static int send_message(char* name, char * method, list_t *args, void *reply_val
 #endif
 	if(dbus_error_is_set (&error)) {
 		LOGE(TAG, "%s", error.message);
+		ret = 1;
 		goto end;
 	}
 	if(reply && reply_value) {
@@ -141,7 +143,7 @@ end:
   		dbus_message_unref (reply);
   	dbus_message_unref (message);
   	dbus_connection_unref (connection);
-  	return 0;
+  	return ret;
 }
 
 void op_dbus_send_pause() {

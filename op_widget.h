@@ -18,6 +18,8 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#ifndef OP_WIDGET_H
+#define OP_WIDGET_H
 
 #include <gtk/gtk.h>
 #include <pthread.h>
@@ -57,9 +59,13 @@ void op_widget_set_aspect(char *aspect);
 void op_widget_set_alpha(int alpha);
 int op_widget_is_running();
 
+void op_widget_hidecontrols(op_widget_t *opw);
+void op_widget_destroy(op_widget_t *opw);
 int op_widget_is_ready(op_widget_t *opw);
 void op_widget_osd_show(op_widget_t *op_widget, char *text);
 void op_widget_osd_set_text_size(op_widget_t *opw, unsigned int size);
 void op_widget_osd_set_text_size_percent(op_widget_t *opw, double percent);
 void op_widget_play(op_widget_t *op_widget, char *vpath);
 op_widget_t *op_widget_new(GtkWindow *window);
+
+#endif

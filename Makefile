@@ -200,6 +200,7 @@ SRC += \
   url_dialog.c \
   ytdl_control.c \
   op_widget.c \
+  top_widget.c \
   $(OSD_SRC)
 
 all:

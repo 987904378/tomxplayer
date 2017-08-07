@@ -136,6 +136,9 @@ void op_widget_toggle_playpause() {
 }
 
 void op_widget_stop_omxplayer() {
+#ifndef NO_OSD
+	tr_stop();
+#endif
 	opc_stop_omxplayer();
 }
 
@@ -195,7 +198,20 @@ void op_widget_osd_set_text_size_percent(op_widget_t *opw, double percent) {
 }
 
 int op_widget_is_ready(op_widget_t *opw) {
-	return opw != NULL && opw->da_w > 0 && opw->da_h > 0;
+	if(opw != NULL && opw->da_w > 0 && opw->da_h > 0) {
+		return 1;
+	} else
+		return 0;
+}
+
+void op_widget_destroy(op_widget_t *opw) {
+#ifndef NO_OSD
+	tr_stop();
+	op_widget_stop_omxplayer();
+	tr_deinit();
+#else
+	op_widget_stop_omxplayer();
+#endif
 }
 
 op_widget_t *op_widget_new(GtkWindow *window) {
@@ -231,5 +247,25 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 #ifndef NO_OSD
 	tr_init();
 #endif
+	temp->window_y = 0;
+	temp->window_x = 0;
+	temp->window_w = 0;
+	temp->window_h = 0;
+	temp->da_x = 0;
+	temp->da_y = 0;
+	temp->da_w = 0;
+	temp->da_h = 0;
+	temp->diff_w = 0;
+	temp->diff_h = 0;
+	temp->pos[0] = 0;
+	temp->pos[1] = 0;
+	temp->pos[2] = 0;
+	temp->pos[3] = 0;
+	temp->minimized = FALSE;
+	temp->maximized = FALSE;
+	temp->fullscreen = FALSE;
+	temp->is_running = 0;
+	temp->hidden = 0;
+	temp->thread = 0;
 	return temp;
 }

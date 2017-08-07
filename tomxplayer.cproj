@@ -96,6 +96,7 @@
     <None Include="url_dialog.h" />
     <None Include="ytdl_control.h" />
     <None Include="op_widget.h" />
+    <None Include="top_widget.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="list.c" />
@@ -116,6 +117,7 @@
     <Compile Include="url_dialog.c" />
     <Compile Include="ytdl_control.c" />
     <Compile Include="op_widget.c" />
+    <Compile Include="top_widget.c" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="DEBIAN\tomxplayer-gtk.desktop">

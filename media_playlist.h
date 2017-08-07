@@ -18,7 +18,10 @@
 //
 //  You should have received a copy of the GNU General Public License
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#ifndef MEDIA_PLAYLIST_H
+#define MEDIA_PLAYLIST_H
 
+#include "list.h"
 
 typedef struct {
 	int index;
@@ -33,3 +36,5 @@ void mp_get_current(media_playlist_t *plist, char * dest);
 void mp_move_next(media_playlist_t *plist);
 void mp_move_previous(media_playlist_t *plist);
 void mp_free(media_playlist_t *plist);
+
+#endif

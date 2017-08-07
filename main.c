@@ -38,7 +38,7 @@
 #include <signal.h>
 #include "url_dialog.h"
 #include "ytdl_control.h"
-#include "op_widget.h"
+#include "top_widget.h"
 
 #ifdef GTK3
 #include "gtk3_compat.h"
@@ -56,31 +56,15 @@ GMainContext *context;
 #endif
 
 static GtkWidget * window;
-static op_widget_t *opw;
-static GtkWidget *hscale;
-static GtkWidget *time_label;
-static GtkWidget *volume_label;
-static GtkWidget *bottom_controls;
-static GtkWidget *pb_controls;
-static GtkWidget *vol_controls;
+static top_widget_t *topw;
 static GtkWidget *top_controls;
 static GtkWidget *top_toolbar;
 
 static gboolean _fullscreen = FALSE;
-static gboolean _paused = FALSE;
 static gboolean _minimized = FALSE;
-static gboolean _should_uslider = TRUE;
 static gboolean _focused = TRUE;
 
-static void play_path();
-
-static pthread_t pb_pos_poll_thread;
-static int pb_pos_poll_cancel = 0;
-static int pb_pos_poll_running = 0;
-
 static pthread_t fs_hide_controls_thread;
-static pthread_t restore_volume_thread;
-static pthread_t set_pb_position_thread;
 #ifdef GTK3
 static GtkCssProvider *fs_css_provider;
 static const char *fs_css = "GtkWindow, GtkToolbar, GtkLabel, GtkDrawingArea { background: #000000; color: #FFFFFF; }";
@@ -100,11 +84,9 @@ static list_t osd_settings;
 static list_t win_settings;
 static list_t advanced_settings;
 
-static media_playlist_t *_playlist;
-
 static void show_controls() {
 	gtk_widget_show(top_controls);
-	gtk_widget_show(bottom_controls);
+	top_widget_showcontrols(topw);
 }
 #ifdef GTK3
 static gboolean hide_controls(gpointer not_used) {
@@ -112,28 +94,21 @@ static gboolean hide_controls(gpointer not_used) {
 static void hide_controls() {
 #endif
 	gtk_widget_hide(top_controls);
-	gtk_widget_hide(bottom_controls);
+	top_widget_hidecontrols(topw);
 #if GTK3
 	return FALSE;
 #endif
 }
 
 static void destroy( GtkWidget *widget, gpointer data ) {
-	pb_pos_poll_cancel = 1;
-	pthread_cancel(pb_pos_poll_thread);
-	pthread_join(pb_pos_poll_thread, NULL);
-#ifndef NO_OSD
-	tr_stop();
-	tr_deinit();
-#endif
-	op_widget_stop_omxplayer();
+	top_widget_destroy(topw);
 	gtk_main_quit ();
 }
 
 gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = FALSE;
 	if(win_trans_unfocus.int_value && !_minimized) {
-		op_widget_set_alpha(win_trans_alpha.int_value);
+		top_widget_set_alpha(topw, win_trans_alpha.int_value);
 #ifdef GTK3
 		gtk_widget_set_opacity ((GtkWidget *)window, (double)win_trans_alpha.int_value / 255);
 #endif
@@ -144,40 +119,12 @@ gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpoint
 gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = TRUE;
 	if(win_trans_unfocus.int_value) {
-		op_widget_set_alpha(255);
+		top_widget_set_alpha(topw, 255);
 #ifdef GTK3
 		gtk_widget_set_opacity((GtkWidget *)window, 1);
 #endif
 	}
 	return FALSE;
-}
-
-static void update_pb_position_ui(long long pb_pos, long long pb_dur) {
-	char dur[255];
-	char pos[255];
-	char timestamp[255];
-	if(pb_dur == 0) return;
-	gtk_range_set_range((GtkRange *)hscale, 0, (gdouble)pb_dur);
-	gtk_range_set_value((GtkRange *)hscale, (gdouble)pb_pos);
-	if(!ms_to_time(pb_dur,dur) && !ms_to_time(pb_pos,pos)) {
-		sprintf(timestamp,"%s / %s",pos,dur);
-		gtk_label_set_text((GtkLabel *)time_label,timestamp);
-	}
-}
-
-static void * timed_set_pb_position(void *arg) {
-    int c = 0;
-	pthread_detach(pthread_self());
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
-	while(c < 499) {
-		usleep(1000);
-		c++;
-	}
-	unsigned long pb_pos = (unsigned long)arg;
-	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
-	op_widget_set_pb_position(pb_pos);
-	_should_uslider = TRUE;
-	return NULL;
 }
 
 static void * timed_hide_controls(void * arg) {
@@ -210,255 +157,22 @@ static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *ev
 	return FALSE;
 }
 
-static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data) {
-	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
-#ifdef GTK3
-	double upper = gtk_adjustment_get_upper(adj);
-	/* Work around for hscale issue which allows you to drag
-	 * slider to value greater than upper?
-	 */
-	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
-	value = value > upper ? upper : value;
-	long long newval = (long long)value;
-#else
-	long long newval = (long long)adj->value;
-#endif
-	_should_uslider = FALSE;
-	pthread_cancel(set_pb_position_thread);
-	pthread_create(&set_pb_position_thread, NULL, &timed_set_pb_position, (long long *)newval);
-#ifdef GTK3
-	update_pb_position_ui((long long)newval, (long long)gtk_adjustment_get_upper(adj));
-#ifndef NO_OSD
-	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	op_widget_osd_show(opw, time);
-#endif
-#else
-	update_pb_position_ui((long long)newval, (long long)adj->upper);
-#ifndef NO_OSD
-	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
-#endif
-#endif
-	return FALSE;
-}
-
-static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
-	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
-	_should_uslider = FALSE;
-#ifdef GTK3
-	long long value = (long long)gtk_adjustment_get_value (adj);
-	value += 10 * 1000 * 1000;
-	double upper = gtk_adjustment_get_upper(adj);
-	/* Work around for hscale issue which allows you to drag
-	 * slider to value greater than upper?
-	 */
-	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
-	value = value > upper ? upper : value;
-	op_widget_set_pb_position(value);
-	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
-#ifndef NO_OSD
-	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	op_widget_osd_show(opw, time);
-#endif
-#else
-	adj->value += 10 * 1000 * 1000;
-	op_widget_set_pb_position(adj->value);
-	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
-#ifndef NO_OSD
-	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
-#endif
-#endif
-	_should_uslider = TRUE;
-	return FALSE;
-}
-
-static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
-	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
-	_should_uslider = FALSE;
-#ifdef GTK3
-	long long value = (long long)gtk_adjustment_get_value (adj);
-	value -= 10 * 1000 * 1000;
-	double lower = gtk_adjustment_get_lower(adj);
-	value = value < lower ? lower : value;
-	op_widget_set_pb_position(value);
-	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
-#ifndef NO_OSD
-	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	op_widget_osd_show(opw, time);
-#endif
-#else
-	adj->value -= 10 * 1000 * 1000;
-	op_widget_set_pb_position(adj->value);
-	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
-#ifndef NO_OSD
-	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
-#endif
-#endif
-	_should_uslider = TRUE;
-	return FALSE;
-}
-
-static int do_volume(int vol) {
-	int ret = 0;
-	double dvol = (double)vol / 100;
-	ret = op_widget_set_volume(dvol);
-	return ret;
-}
-
-static gboolean vol_up_clicked( GtkWidget *widget, gpointer data ) {
-	volume.int_value += 5;
-	volume.int_value = volume.int_value > volume.max ? volume.max : volume.int_value;
-	do_volume(volume.int_value);
-	settings_save(&volume);
-#ifndef NO_OSD
-	char osd_text[255];
-	sprintf(osd_text, "VOL: %d",volume.int_value);
-	op_widget_osd_show(opw, osd_text);
-#endif
-	return FALSE;
-}
-
-static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
-	volume.int_value -= 5;
-	volume.int_value = volume.int_value < volume.min ? volume.min : volume.int_value;
-	do_volume(volume.int_value);
-	settings_save(&volume);
-#ifndef NO_OSD
-	char osd_text[255];
-	sprintf(osd_text, "VOL: %d",volume.int_value);
-	op_widget_osd_show(opw, osd_text);
-#endif
-	return FALSE;
-}
-
-static void pause_clicked( GtkWidget *widget, gpointer data ) {
-	_paused = _paused ? FALSE : TRUE;
-#ifndef NO_OSD
-	op_widget_osd_show(opw, _paused ? "Paused" : "Playing");
-#endif
-	op_widget_toggle_playpause();
-}
-
-static void * restore_volume(void * arg) {
-	pthread_detach(pthread_self());
-	while(do_volume(volume.int_value))
-		usleep(20 * 1000);
-	return NULL;
-}
-
-#ifdef GTK3
-static gboolean update_pb_position_ui_gtk3(gpointer pb_pos) {
-	long long pos = ((long long *)pb_pos)[1];
-	long long dur = ((long long *)pb_pos)[0];
-	update_pb_position_ui(pos, dur);
-	return FALSE;
-}
-#endif
-
-static void *pb_pos_poll(void * arg) {
-	long long pb_pos[2];
-	pthread_detach(pthread_self());
-	pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	pb_pos_poll_running = 1; 
-	while(!pb_pos_poll_cancel) {
-		usleep(950 * 1000);
-		if(!op_widget_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
-			mp_move_next(_playlist);
-			play_path();
-		}
-		if(pb_pos_poll_cancel)
-			break;
-		if(op_widget_status(pb_pos) || !_should_uslider || !op_widget_is_running())
-			continue;
-#ifdef GTK3
-		g_main_context_invoke(context, &update_pb_position_ui_gtk3, (void *)pb_pos);
-#else
-		gdk_threads_enter();
-		update_pb_position_ui(pb_pos[1], pb_pos[0]);
-		gdk_threads_leave();
-#endif
-	}
-	pb_pos_poll_running = 0;
-	return NULL;
-}
-
-static int set_video_path(char *path) {
-	int is_http = !strncmp(path,"http://",7) || !strncmp(path,"https://",8);
-	FILE * fd = fopen(path,"r");
-	if(fd == NULL && !is_http) {
-		int err = errno;
-		LOGE(TAG, "path '%s' - %s", path, strerror(err));
-		return err;
-	}
-	LOGD(TAG, "Video path set to %s",path);
-	if(_playlist != NULL)
-		mp_free(_playlist);
-	if(cont_pb.int_value && !is_http)
-		_playlist = mp_create_dir_of_file(path);
-	else {
-		_playlist = mp_create();
-		mp_add(_playlist, path);
-	}
-	return 0;
-}
-
-static void play_path() {
-	char title[255];
-	char vpath[255];
-	if(!_playlist) {
-		LOGE(TAG,"%s", "_playlist is NULL?");
-		return;
-	}
-	mp_get_current(_playlist, vpath);
-	sprintf(title, "%s - %s","tomxplayer", vpath);
-	gtk_window_set_title((GtkWindow *)window, title);
-	op_widget_play(opw, vpath);
-	if(!pb_pos_poll_running) {
-		pthread_create(&pb_pos_poll_thread,NULL, &pb_pos_poll,NULL); 
-	}
-	sleep(1);
-	pthread_create(&restore_volume_thread,NULL, &restore_volume,NULL);
-#ifndef NO_OSD
-	op_widget_osd_show(opw, basename(vpath));
-#endif
-}
-
 void *play_on_start(void *arg) {
-	while(!op_widget_is_ready(opw))
+	while(!top_widget_is_ready(topw))
 		usleep(500 * 1000);
-	play_path();
+	top_widget_play_path(topw);
 	return NULL;
 }
 
 static void window_realize(GtkWidget *widget, gpointer data) {
-	if(_playlist != NULL && _playlist->list.count > 0) {
+	if(topw->playlist != NULL && topw->playlist->list.count > 0) {
 		pthread_t thread;
 		pthread_create(&thread, NULL, &play_on_start, NULL);
 	}
 }
 
-static void previous_clicked( GtkWidget *widget, gpointer data ) {
-	if(cont_pb.int_value) {
-		unsigned long pos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
-		if(pos > (1000 * 5000))
-			op_widget_set_pb_position(0);
-		else {
-			mp_move_previous(_playlist);
-			play_path();
-		}
-	} else {
-		op_widget_set_pb_position(0);
-	}
-}
-
-static void next_clicked( GtkWidget *widget, gpointer data ) {
-	if(cont_pb.int_value) {
-		mp_move_next(_playlist);
-		play_path();
-	}
-}
-
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
-	op_widget_hidevideo();
+	top_widget_hidevideo(topw);
 #ifndef NO_OSD
 	tr_stop();
 #endif
@@ -473,24 +187,22 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
-	op_widget_unhidevideo();
+	top_widget_unhidevideo(topw);
 }
 
 static void ytdl_out_cb(char *out_line) {
 #ifndef NO_OSD
-	op_widget_osd_show(opw, out_line);
+	top_widget_osd_show(topw, out_line);
 #endif
 }
 
 static void ytdl_url_cb(char *url) {
-#ifndef NO_OSD
-	set_video_path(url);
-	play_path();
-#endif
+	top_widget_set_video_path(topw, url);
+	top_widget_play_path(topw);
 }
 
 static void url_clicked( GtkWidget *widget, gpointer data ) {
-	op_widget_hidevideo();
+	top_widget_hidevideo(topw);
 #ifndef NO_OSD
 	tr_stop();
 #endif
@@ -499,21 +211,22 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 	if (response == GTK_RESPONSE_ACCEPT) {
 		gtk_widget_destroy((GtkWidget *)ud->window);
 		if(ud->url != NULL) {
-			set_video_path(ud->url);
-			play_path();
+			top_widget_set_video_path(topw, ud->url);
+			top_widget_play_path(topw);
 		} else
-			op_widget_unhidevideo();
+			top_widget_unhidevideo(topw);
 	} else if (response == GTK_RESPONSE_APPLY) {
 	if(ud->url != NULL) {
 			gtk_widget_destroy((GtkWidget *)ud->window);
 			ytdl_register_output_cb(&ytdl_out_cb);
 			ytdl_register_url_cb(&ytdl_url_cb);
 			ytdl_cget_url_thread(ud->url);
+			top_widget_stop(topw);
 		} else
-			op_widget_unhidevideo();
+			top_widget_unhidevideo(topw);
 	} else {
 		gtk_widget_destroy((GtkWidget *)ud->window);
-		op_widget_unhidevideo();
+		top_widget_unhidevideo(topw);
 	}
 }
 
@@ -531,7 +244,7 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		}
 
 		form_orig = gtk_style_copy(gtk_widget_get_style(window));
-		label_orig = gtk_style_copy(gtk_widget_get_style(time_label));
+		label_orig = gtk_style_copy(gtk_widget_get_style(topw->time_label));
 		toolbar_orig = gtk_style_copy(gtk_widget_get_style(top_toolbar));
 
 		form_fs = gtk_style_copy(form_orig);
@@ -543,10 +256,10 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 
 		gtk_widget_set_style(window, form_fs);
 		gtk_widget_set_style(top_toolbar, toolbar_fs);
-		gtk_widget_set_style(pb_controls, toolbar_fs);
-		gtk_widget_set_style(vol_controls, toolbar_fs);
-		gtk_widget_set_style(time_label, label_fs);
-		gtk_widget_set_style(volume_label, label_fs);
+		gtk_widget_set_style(topw->pb_controls, toolbar_fs);
+		gtk_widget_set_style(topw->vol_controls, toolbar_fs);
+		gtk_widget_set_style(topw->time_label, label_fs);
+		gtk_widget_set_style(topw->volume_label, label_fs);
 		hide_controls();
 #else
 		gtk_style_context_add_provider
@@ -554,9 +267,9 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 		gtk_style_context_add_provider
 				(gtk_widget_get_style_context((GtkWidget *)top_toolbar),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 		gtk_style_context_add_provider
-				(gtk_widget_get_style_context((GtkWidget *)pb_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+				(gtk_widget_get_style_context((GtkWidget *)topw->pb_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 		gtk_style_context_add_provider
-				(gtk_widget_get_style_context((GtkWidget *)vol_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
+				(gtk_widget_get_style_context((GtkWidget *)topw->vol_controls),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
 		hide_controls(NULL);
 #endif
 		_fullscreen = TRUE;
@@ -566,18 +279,58 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 #ifdef GTK3
 		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)window),(GtkStyleProvider *)fs_css_provider);
 		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)top_toolbar),(GtkStyleProvider *)fs_css_provider);
-		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)pb_controls),(GtkStyleProvider *)fs_css_provider);
-		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)vol_controls),(GtkStyleProvider *)fs_css_provider);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)topw->pb_controls),(GtkStyleProvider *)fs_css_provider);
+		gtk_style_context_remove_provider(gtk_widget_get_style_context((GtkWidget *)topw->vol_controls),(GtkStyleProvider *)fs_css_provider);
 #else
 		gtk_widget_set_style(window, form_orig);
 		gtk_widget_set_style(top_toolbar, toolbar_orig);
-		gtk_widget_set_style(pb_controls, toolbar_orig);
-		gtk_widget_set_style(vol_controls, toolbar_orig);
-		gtk_widget_set_style(time_label, label_orig);
-		gtk_widget_set_style(volume_label, label_orig);
+		gtk_widget_set_style(topw->pb_controls, toolbar_orig);
+		gtk_widget_set_style(topw->vol_controls, toolbar_orig);
+		gtk_widget_set_style(topw->time_label, label_orig);
+		gtk_widget_set_style(topw->volume_label, label_orig);
 #endif
 		show_controls();
 	}
+}
+
+static gboolean window_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+	/* Block so that keys do not effect controls. */
+	return TRUE;
+}
+
+static gboolean window_key_release_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+	LOGD(TAG,"Key release '%d'",event->keyval);
+	switch(event->keyval) {
+		case 112:
+			top_widget_toggle_playpause(topw);
+			break;
+		case 65362:
+			top_widget_volume_up(topw);
+			break;
+		case 65364:
+			top_widget_volume_down(topw);
+			break;
+		case 65361:
+			top_widget_seek_forward(topw);
+			break;
+		case 65363:
+			top_widget_seek_back(topw);
+			break;
+		case 65366:
+			top_widget_next(topw);
+			break;
+		case 65365:
+			top_widget_next(topw);
+			break;
+		case 65307:
+			if(_fullscreen)
+				fullscreen_clicked(NULL,topw);
+			break;
+		case 65480:
+			fullscreen_clicked(NULL,topw);
+			break;
+	}
+	return TRUE;
 }
 
 gboolean video_filter_cb(const GtkFileFilterInfo *filter_info, gpointer data) {
@@ -586,7 +339,7 @@ gboolean video_filter_cb(const GtkFileFilterInfo *filter_info, gpointer data) {
 
 static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	GtkWidget *dialog;
-	op_widget_hidevideo();
+	top_widget_hidevideo(topw);
 	dialog = gtk_file_chooser_dialog_new (
 			"Open File", 
 			(GtkWindow *)window,
@@ -616,52 +369,12 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 		char *filename;
 		filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
 		gtk_widget_destroy (dialog);
-		set_video_path(filename);
-		play_path();
+		top_widget_set_video_path(topw, filename);
+		top_widget_play_path(topw);
 		g_free (filename);
 	} else
 		gtk_widget_destroy (dialog);
-	op_widget_unhidevideo();
-}
-
-static gboolean window_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
-	/* Block so that keys do not effect controls. */
-	return TRUE;
-}
-
-static gboolean window_key_release_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
-	LOGD(TAG,"Key release '%d'",event->keyval);
-	switch(event->keyval) {
-		case 112:
-			pause_clicked(NULL, NULL);
-			break;
-		case 65362:
-			vol_up_clicked(NULL, NULL);
-			break;
-		case 65364:
-			vol_down_clicked(NULL, NULL);
-			break;
-		case 65361:
-			rewind_clicked(NULL, NULL);
-			break;
-		case 65363:
-			ff_clicked(NULL, NULL);
-			break;
-		case 65366:
-			next_clicked(NULL,NULL);
-			break;
-		case 65365:
-			previous_clicked(NULL,NULL);
-			break;
-		case 65307:
-			if(_fullscreen)
-				fullscreen_clicked(NULL,NULL);
-			break;
-		case 65480:
-			fullscreen_clicked(NULL,NULL);
-			break;
-	}
-	return TRUE;
+	top_widget_unhidevideo(topw);
 }
 
 static void about_clicked(GtkWidget *widget, gpointer user_data) {
@@ -684,10 +397,10 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 
 	gtk_about_dialog_set_website(ad, "http://meticulus.co.vu");
 	gtk_about_dialog_set_authors(ad, authors);
-	op_widget_hidevideo();
+	top_widget_hidevideo(topw);
 	gtk_dialog_run((GtkDialog *) ad);
 	gtk_widget_destroy((GtkWidget *)ad);
-	op_widget_unhidevideo();
+	op_widget_unhidevideo(topw);
 }
 
 static void build_drawing_area(GtkBox *vbox) {
@@ -697,8 +410,6 @@ static void build_drawing_area(GtkBox *vbox) {
 	fs_css_provider = gtk_css_provider_new();
 	gtk_css_provider_load_from_data (fs_css_provider, fs_css, strlen(fs_css), &gerr);
 #endif
-	opw = op_widget_new((GtkWindow *)window);
-	gtk_box_pack_start((GtkBox *)vbox,opw->drawing_area,TRUE,TRUE,0);
 }
 
 static void build_top_toolbar(GtkBox *vbox) {
@@ -734,65 +445,8 @@ static void build_top_toolbar(GtkBox *vbox) {
 }
 
 static void build_bottom_toolbar(GtkBox *vbox) {
-	bottom_controls = gtk_hbox_new(0, 6);
-	pb_controls = gtk_toolbar_new();
-
-	gtk_toolbar_set_show_arrow((GtkToolbar *)pb_controls,FALSE);
-
-	GtkToolItem *previous = gtk_tool_button_new_from_stock("gtk-media-previous");
-	g_signal_connect((GObject *)previous,"clicked",G_CALLBACK(previous_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)pb_controls,previous, 0);
-
-	GtkToolItem *rewind = gtk_tool_button_new_from_stock("gtk-media-rewind");
-	g_signal_connect((GObject *)rewind,"clicked",G_CALLBACK(rewind_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)pb_controls,rewind, 1);
-
-	GtkToolItem *pause = gtk_toggle_tool_button_new_from_stock("gtk-media-pause");
-	g_signal_connect((GObject *)pause,"clicked",G_CALLBACK(pause_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)pb_controls,pause, 2);
-
-	GtkToolItem *ff = gtk_tool_button_new_from_stock("gtk-media-forward");
-	g_signal_connect((GObject *)ff,"clicked",G_CALLBACK(ff_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)pb_controls,ff, 3);
-
-	GtkToolItem *next = gtk_tool_button_new_from_stock("gtk-media-next");
-	g_signal_connect((GObject *)next,"clicked",G_CALLBACK(next_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)pb_controls,next, 4);
-
-	gtk_box_pack_start((GtkBox *)bottom_controls, pb_controls, FALSE, FALSE, 0);
-
-	gtk_box_pack_start((GtkBox *)bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
-
-	time_label = gtk_label_new("00:00:00 / 00:00:00");
-	gtk_box_pack_start((GtkBox *)bottom_controls, time_label, FALSE, FALSE, 0);
-
-	gtk_box_pack_start((GtkBox *)bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
-
-	hscale = gtk_hscale_new_with_range(0,100,1);
-	gtk_scale_set_draw_value((GtkScale *)hscale,FALSE);
-	g_signal_connect((GObject *)hscale,"change-value",G_CALLBACK(hscale_change_value),NULL);
-	gtk_box_pack_start((GtkBox *)bottom_controls, hscale, TRUE, TRUE, 0);
-
-	gtk_box_pack_start((GtkBox *)bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
-
-	volume_label = gtk_label_new("Volume:");
-	gtk_box_pack_start((GtkBox *)bottom_controls, volume_label, FALSE, FALSE, 0);
-
-	vol_controls = gtk_toolbar_new();
-
-	gtk_toolbar_set_show_arrow((GtkToolbar *)vol_controls,FALSE);
-
-	GtkToolItem *vol_up = gtk_tool_button_new_from_stock("gtk-go-up");
-	g_signal_connect((GObject *)vol_up,"clicked",G_CALLBACK(vol_up_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_up, 0);
-
-	GtkToolItem *vol_down = gtk_tool_button_new_from_stock("gtk-go-down");
-	g_signal_connect((GObject *)vol_down,"clicked",G_CALLBACK(vol_down_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)vol_controls,vol_down, 1);
-
-	gtk_box_pack_end((GtkBox *)bottom_controls,vol_controls,FALSE,FALSE,0);
-
-	gtk_box_pack_end((GtkBox *)vbox, bottom_controls, FALSE, FALSE, 0);
+	topw = top_widget_new((GtkWindow *)window);
+	gtk_box_pack_start(vbox, topw->widget, TRUE, TRUE, 0);
 }
 
 static void stretch_updated(void *setting) {
@@ -804,9 +458,9 @@ static void stretch_updated(void *setting) {
 static void osd_textsize_updated(void *setting) {
 	if(osd_textsize_percent.int_value) {
 		double percent = osd_textsize.int_value * 0.01;
-		op_widget_osd_set_text_size_percent(opw, percent);
+		top_widget_osd_set_text_size_percent(topw, percent);
 	} else
-		op_widget_osd_set_text_size(opw, (unsigned int)osd_textsize.int_value);
+		top_widget_osd_set_text_size(topw, (unsigned int)osd_textsize.int_value);
 	LOGD(TAG, "%s", "osd_text_size updated");
 }
 #endif
@@ -819,7 +473,7 @@ static void win_trans_setting_updated(void *setting) {
 			gtk_widget_set_opacity (window, (double)win_trans_alpha.int_value / 255);
 #endif
 	} else {
-		op_widget_hidevideo();
+		top_widget_hidevideo(topw);
 #ifdef GTK3
 		if(window)
 			gtk_widget_set_opacity ((GtkWidget *)window, 1);
@@ -828,13 +482,13 @@ static void win_trans_setting_updated(void *setting) {
 }
 
 static void arb_offset_updated(void *setting) {
-//	calc_render_pos();
+	gtk_widget_queue_resize ((GtkWidget *)topw->widget);
 }
 
 #ifdef USE_SIGHANDLER
 static void signal_handler(int sig) {
 	LOGE(TAG, "Recieved signal %d stopping omxplayer",sig);
-	op_widget_stop_omxplayer();
+	top_widget_destroy(topw);
 	exit(127);
 }
 #endif
@@ -916,9 +570,6 @@ int main (int argc, char * argv[]) {
 #else
 	gdk_threads_init();
 #endif
-	init_settings();
-	if(argc > 1)
-		set_video_path(argv[argc -1]);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title((GtkWindow *)window,"tomxplayer");
 	GdkPixbuf *icon = gdk_pixbuf_new_from_file(ICON_PATH, &gerr);
@@ -940,7 +591,10 @@ int main (int argc, char * argv[]) {
 	build_top_toolbar((GtkBox *)vbox);
 	build_drawing_area((GtkBox *)vbox); 
 	build_bottom_toolbar((GtkBox *)vbox);
+	if(argc > 1)
+		top_widget_set_video_path(topw, argv[argc -1]);
 	gtk_widget_show_all(window);
+	init_settings();
 	gtk_main();
 	op_widget_stop_omxplayer();
 	return 0;
