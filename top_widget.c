@@ -52,7 +52,7 @@ static void * restore_volume(void * arg) {
 	if(!topw->op_widget->minimized && count < 200) {
 		op_widget_unhidevideo(topw->op_widget);
 		op_widget_set_alpha(topw->alpha);
-	} else if(count >= 299) {
+	} else if(count >= 199) {
 		LOGE(TAG, "%s" ,"Could not restore volume? Did omxplayer actually start?");
 		top_widget_stop(topw);
 	}
@@ -83,7 +83,6 @@ static void *pb_pos_poll(void * arg) {
 	LOGD(TAG, "%s", "pos_poll_started");
 	top_widget_t *topw = (top_widget_t *)arg;
 	int64_t pb_pos[2];
-	pthread_detach(pthread_self());
 	topw->pb_pos_poll_running = 1; 
 	while(!topw->pb_pos_poll_cancel) {
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
@@ -213,7 +212,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 #else
 	adj->value -= 10 * 1000 * 1000;
 	topw->pb_pos = (int64_t)adj->value;
-	op_widget_set_pb_position(&adj->value);
+	op_widget_set_pb_position(&topw->pb_pos);
 	topw->pb_dur = (int64_t)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD

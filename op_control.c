@@ -66,6 +66,7 @@ void opc_stop_omxplayer() {
 		pthread_join(thread, NULL);
 		playback_completed_cb = cb;
 		is_running = 0;
+		usleep(200000);
 	}
 }
 

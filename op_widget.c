@@ -222,7 +222,7 @@ void op_widget_destroy(op_widget_t *opw) {
 #endif
 }
 
-static void arb_offset_updated(void *setting, void *user_data) {
+static void render_pos_setting_changed(void *setting, void *user_data) {
 	calc_render_pos((op_widget_t *)user_data);
 }
 
@@ -251,14 +251,18 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 	gtk_window_set_position ((GtkWindow *)window, GTK_WIN_POS_CENTER);
 #else
 	gdk_threads_add_timeout(20, &window_position_poll, temp);
+	border_offset.setting_update_cb = &render_pos_setting_changed;
+	border_offset.setting_update_cb_user_data = temp;
+	title_bar_offset.setting_update_cb = &render_pos_setting_changed;
+	title_bar_offset.setting_update_cb_user_data = temp;
 #endif
 	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),temp);
 #ifndef NO_OSD
 	temp->tr = tr_new();
 #endif
-	arb_x_offset.setting_update_cb = &arb_offset_updated;
+	arb_x_offset.setting_update_cb = &render_pos_setting_changed;
 	arb_x_offset.setting_update_cb_user_data = temp;
-	arb_y_offset.setting_update_cb = &arb_offset_updated;
+	arb_y_offset.setting_update_cb = &render_pos_setting_changed;
 	arb_y_offset.setting_update_cb_user_data = temp;
 	temp->window_y = 0;
 	temp->window_x = 0;
