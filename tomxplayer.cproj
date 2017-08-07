@@ -47,12 +47,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug_GTK3|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineSymbols>DEBUG GTK3</DefineSymbols>
+    <DefineSymbols>DEBUG GTK3 VERSION=\"0.0.0.0-debug\"</DefineSymbols>
     <ExtraLinkerArguments>-L/opt/vc/lib -L/usr/lib -L/usr/lib/arm-linux-gnueabihf -lbrcmGLESv2 -lbrcmEGL  -lGLESv2 -lopenmaxil -lbcm_host -lvcos -lvchiq_arm -lrt -lm -lfreetype -lz -pthread -lgtk-3 -lgdk-3 -latk-1.0 -lgio-2.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lpangocairo-1.0 -lcairo -lpango-1.0 -lfreetype -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0 -lpthread -ldbus-1 </ExtraLinkerArguments>
     <ExtraCompilerArguments>-DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -Wall -g -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/usr/include -I/opt/vc/include -I/usr/include/freetype2 -I/opt/vc/include/EGL -pthread -I/usr/include/gtk-3.0 -I/usr/arm-linux-gnueabihf/gtk-3.0/include -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/arm-linux-gnueabihf/dbus-1.0/include </ExtraCompilerArguments>
     <CompileTarget>Bin</CompileTarget>
-    <OutputName>tomxplayer</OutputName>
-    <Commandlineparameters>~/Video/video2.mp4</Commandlineparameters>
+    <OutputName>tomxplayer.bin</OutputName>
     <Externalconsole>true</Externalconsole>
     <SourceDirectory>.</SourceDirectory>
   </PropertyGroup>
@@ -80,7 +79,6 @@
     <None Include="setting_list_view.h" />
     <None Include="op_dbus.h" />
     <None Include="media_playlist.h" />
-    <None Include="version.h" />
     <None Include="time_utils.h" />
     <None Include="osd_rpi\graphics_x_private.h" />
     <None Include="osd_rpi\vgfont.h" />
@@ -90,7 +88,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="DEBIAN\control" />
-    <None Include="tomxplayer" />
+    <None Include="tomxplayer">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="build_deb.sh" />
     <None Include="gtk3_compat.h" />
   </ItemGroup>
