@@ -5,16 +5,57 @@ ARCH :=$(shell arch)
 #
 GTK_VERSION := 3
 
+OSD_CFLAGS := \
+	-DSTANDALONE \
+	-D__STDC_CONSTANT_MACROS \
+	-D__STDC_LIMIT_MACROS -DTARGET_POSIX \
+	-D_LINUX \
+	-fPIC \
+	-DPIC \
+	-D_REENTRANT \
+	-D_LARGEFILE64_SOURCE \
+	-D_FILE_OFFSET_BITS=64 \
+	-U_FORTIFY_SOURCE \
+	-Wall \
+	-g \
+	-DHAVE_LIBOPENMAX=2 \
+	-DOMX -DOMX_SKIP64BIT \
+	-ftree-vectorize \
+	-pipe \
+	-DUSE_EXTERNAL_OMX \
+	-DHAVE_LIBBCM_HOST \
+	-DUSE_EXTERNAL_LIBBCM_HOST \
+	-DUSE_VCHIQ_ARM \
+	-Wno-psabi \
+	-I/opt/vc/include/interface/vcos/pthreads \
+	-I/opt/vc/include/interface/vmcs_host/linux \
+	-I/opt/vc/include \
+	-I/opt/vc/include/EGL
+
+OSD_LDPATHS := \
+	-L/opt/vc/lib
+
+OSD_LDFLAGS := \
+	-lbrcmGLESv2 \
+	-lbrcmEGL \
+	-lGLESv2 \
+	-lopenmaxil \
+	-lbcm_host \
+	-lvcos \
+	-lvchiq_arm \
+	-lrt \
+	-lm \
+	-lfreetype \
+	-lz
+
+OSD_SRC := \
+	osd_rpi/font.c \
+	osd_rpi/graphics.c \
+	osd_rpi/text_render.c \
+	osd_rpi/vgft.c
+
 ifeq ($(ARCH),armv7l)
 	ARCH_LIB_PATH := arm-linux-gnueabihf
-	CFLAGS := -DSTANDALONE -D__STDC_CONSTANT_MACROS -D__STDC_LIMIT_MACROS -DTARGET_POSIX -D_LINUX -fPIC -DPIC -D_REENTRANT -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -U_FORTIFY_SOURCE -Wall -g -DHAVE_LIBOPENMAX=2 -DOMX -DOMX_SKIP64BIT -ftree-vectorize -pipe -DUSE_EXTERNAL_OMX -DHAVE_LIBBCM_HOST -DUSE_EXTERNAL_LIBBCM_HOST -DUSE_VCHIQ_ARM -Wno-psabi
-	CFLAGS += -I/opt/vc/include/interface/vcos/pthreads -I/opt/vc/include/interface/vmcs_host/linux -I/usr/include -I/opt/vc/include -I/usr/include/freetype2 -I/opt/vc/include/EGL
-	LDFLAGS := -L/opt/vc/lib -lbrcmGLESv2 -lbrcmEGL  -lGLESv2 -lopenmaxil -lbcm_host -lvcos -lvchiq_arm -lrt -lm -lfreetype -lz
-	SRC := \
-		osd_rpi/font.c \
-		osd_rpi/graphics.c \
-		osd_rpi/text_render.c \
-		osd_rpi/vgft.c
 else
 	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
 	NOTES += "Building for $(ARCH) is for development and testing purposes only.\n"
@@ -22,22 +63,90 @@ else
 	NOTES += "tomxplayer is only useful on the Raspberry Pi - armv7l.\n"
 	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
 	DEFS += -Dx86
-	ARCH_LIB_PATH := x86_64-linux-gnu
+	OSD_SRC :=
+	OSD_LDFLAGS :=
+	OSD_LDPATHS :=
+	OSD_CFLAGS :=
+	ARCH_LIB_PATH := $(ARCH)-linux-gnu
 endif
 
-LDFLAGS += -L/usr/lib -L/usr/lib/$(ARCH_LIB_PATH)
+COMMON_CFLAGS := \
+	-I/usr/include \
+	-I/usr/include/freetype2 \
+	-I/usr/include/dbus-1.0 \
+	-I/usr/lib/$(ARCH_LIB_PATH)/dbus-1.0/include
+
+COMMON_LDFLAGS := \
+	-lfreetype \
+	-ldbus-1 \
+	-lm \
+	-lpthread
+
+COMMON_LDPATHS += \
+	-L/usr/lib \
+	-L/usr/lib/$(ARCH_LIB_PATH)
+
+GTK3_CFLAGS := \
+	-DGTK3 \
+	-pthread \
+	-I/usr/include/gtk-3.0 \
+	-I/usr/$(ARCH_LIB_PATH)/gtk-3.0/include \
+	-I/usr/include/pixman-1 \
+	-I/usr/include/libpng12
+
+GTK3_LDFLAGS := \
+	-pthread \
+	-lgtk-3 \
+	-lgdk-3 \
+	-lgio-2.0 \
+	-lpangoft2-1.0 \
+	-lpangocairo-1.0 \
+	-lcairo \
+	-lpango-1.0 \
+	-lfontconfig \
+	-lgthread-2.0 \
+	-lrt \
+
+GTK2_CFLAGS := \
+	-I/usr/include/gtk-2.0 \
+	-I/usr/$(ARCH_LIB_PATH)/gtk-2.0/include \
+	-I/usr/lib/$(ARCH_LIB_PATH)/gtk-2.0/include
+
+GTK2_LDFLAGS := \
+	-lgtk-x11-2.0 \
+	-lgdk-x11-2.0 \
+	-lXi \
+	-lXft \
+	-lXrender \
+	-lX11 \
+	-ldl
+
+GTK_COMMON_CFLAGS := \
+	-I/usr/include/glib-2.0 \
+	-I/usr/lib/$(ARCH_LIB_PATH)/glib-2.0/include \
+	-I/usr/include/cairo \
+	-I/usr/include/pango-1.0 \
+	-I/usr/include/gdk-pixbuf-2.0 \
+	-I/usr/include/atk-1.0
+
+GTK_COMMON_LDFLAGS := \
+	-latk-1.0 \
+	-lgobject-2.0 \
+	-lgmodule-2.0 \
+	-lglib-2.0 \
+	-lgdk_pixbuf-2.0
+
+LDFLAGS := \
+	$(OSD_LDPATHS) \
+	$(COMMON_LDPATHS) \
 
 ifeq ($(GTK_VERSION), 3)
-	DEFS += -DGTK3
-	CFLAGS += -pthread -I/usr/include/gtk-3.0 -I/usr/$(ARCH_LIB_PATH)/gtk-3.0/include -I/usr/include/atk-1.0 -I/usr/include/cairo -I/usr/include/pango-1.0 -I/usr/include/glib-2.0 -I/usr/lib/$(ARCH_LIB_PATH)/glib-2.0/include -I/usr/include/pixman-1 -I/usr/include/freetype2 -I/usr/include/libpng12 -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/dbus-1.0 -I/usr/lib/$(ARCH_LIB_PATH)/dbus-1.0/include	
-	LDFLAGS += -pthread -lgtk-3 -lgdk-3 -latk-1.0 -lgio-2.0 -lpangoft2-1.0 -lgdk_pixbuf-2.0 -lpangocairo-1.0 -lcairo -lpango-1.0 -lfreetype -lfontconfig -lgobject-2.0 -lgmodule-2.0 -lgthread-2.0 -lrt -lglib-2.0
+	CFLAGS := $(OSD_CFLAGS) $(GTK3_CFLAGS) $(GTK_COMMON_CFLAGS) $(COMMON_CFLAGS)
+	LDFLAGS += $(OSD_LDFLAGS) $(GTK3_LDFLAGS) $(GTK_COMMON_LDFLAGS) $(COMMON_LDFLAGS)
 else
-	CFLAGS += -I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/$(ARCH_LIB_PATH)/glib-2.0/include -I /usr/include/cairo -I/usr/include/pango-1.0 -I/usr/lib/$(ARCH_LIB_PATH)/gtk-2.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0 -I/usr/include/dbus-1.0 -I /usr/lib/$(ARCH_LIB_PATH)/dbus-1.0/include
-	LDFLAGS += -lgtk-x11-2.0 -lgdk-x11-2.0 -lXi -lgdk_pixbuf-2.0 -lm -lXft -lXrender -lXext -lX11 -lfreetype -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -lpthread
- 
+	CFLAGS := $(OSD_CFLAGS) $(GTK2_CFLAGS) $(GTK_COMMON_CFLAGS) $(COMMON_CFLAGS)
+	LDFLAGS += $(OSD_LDFLAGS) $(GTK2_LDFLAGS) $(GTK_COMMON_LDFLAGS) $(COMMON_LDFLAGS)
 endif
-
-LDFLAGS += -ldbus-1
 
 SRC += \
   main.c \
@@ -51,6 +160,7 @@ SRC += \
   setting_list_view.c \
   list.c \
   main_settings.c \
+  $(OSD_SRC)
 
 debug:
 	@echo $(NOTES)
@@ -66,7 +176,7 @@ release:
 	@echo $(NOTES)
 	@echo Building Release...
 	@echo
-	gcc $(CFLAGS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(LDFLAGS)
+	gcc $(CFLAGS) $(DEFS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(LDFLAGS)
 	@echo
 	@echo Build Release Complete.
 	@echo Building Debian Package...
