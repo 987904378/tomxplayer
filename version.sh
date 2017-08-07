@@ -2,19 +2,17 @@
 
 COUNT=0
 
-for line in $(git log)
+while read line 
 do
 	COUNT=$(expr $COUNT + 1)
-done
+done <<< "$(git log --oneline)"
 
-MAJOR=$(expr $COUNT / 10000)
-AMOUNT=$(expr $MAJOR \* 10000)
+MAJOR=$(expr $COUNT / 100)
+AMOUNT=$(expr $MAJOR \* 100)
 COUNT=$(expr $COUNT - $AMOUNT)
-MINOR=$(expr $COUNT / 1000)
-AMOUNT=$(expr $MINOR \* 1000)
+MINOR=$(expr $COUNT / 10)
+AMOUNT=$(expr $MINOR \* 10)
 COUNT=$(expr $COUNT - $AMOUNT)
-REVISION=$(expr $COUNT / 100)
-AMOUNT=$(expr $MINOR \* 100)
-COUNT=$(expr $COUNT - $AMOUNT)
-echo "$MAJOR.$MINOR.$REVISION.$COUNT"
+REVISION=$(git log --pretty="%h" -1)
+echo "$MAJOR.$MINOR.$COUNT-$REVISION"
 
