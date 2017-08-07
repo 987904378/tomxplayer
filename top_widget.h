@@ -41,8 +41,8 @@ typedef struct {
 #endif
 	gboolean paused;
 	gboolean should_uslider;
-	long long pb_pos;
-	long long pb_dur;
+	int64_t pb_pos;
+	int64_t pb_dur;
 	pthread_t pb_pos_poll_thread;
 	int pb_pos_poll_cancel;
 	int pb_pos_poll_running;

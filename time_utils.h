@@ -22,6 +22,6 @@
 #ifndef TIME_UTILS_H
 #define TIME_UTILS_H
 
-int ms_to_time(unsigned long ms, char **dest);
+int ms_to_time(int64_t *ms, char **dest);
 
 #endif

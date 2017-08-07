@@ -66,7 +66,7 @@ static void update_pb_position_ui(top_widget_t *topw) {
 	topw->pb_dur = topw->pb_dur < 1 ? 1 : topw->pb_dur;
 	gtk_range_set_range((GtkRange *)topw->hscale, 0, (gdouble)topw->pb_dur);
 	gtk_range_set_value((GtkRange *)topw->hscale, (gdouble)topw->pb_pos);
-	if(!ms_to_time(topw->pb_dur, &dur) && !ms_to_time(topw->pb_pos, &pos)) {
+	if(!ms_to_time(&topw->pb_dur, &dur) && !ms_to_time(&topw->pb_pos, &pos)) {
 		asprintf(&timestamp,"%s / %s",pos,dur);
 		gtk_label_set_text((GtkLabel *)topw->time_label,timestamp);
 	}
@@ -82,7 +82,7 @@ static gboolean update_pb_position_ui_gtk3(gpointer arg) {
 static void *pb_pos_poll(void * arg) {
 	LOGD(TAG, "%s", "pos_poll_started");
 	top_widget_t *topw = (top_widget_t *)arg;
-	long long pb_pos[2];
+	int64_t pb_pos[2];
 	pthread_detach(pthread_self());
 	topw->pb_pos_poll_running = 1; 
 	while(!topw->pb_pos_poll_cancel) {
@@ -117,9 +117,8 @@ static void * timed_set_pb_position(void *arg) {
 		c++;
 	}
 	top_widget_t *topw = (top_widget_t *)arg;
-	unsigned long pb_pos = (unsigned long)topw->pb_pos;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
-	op_widget_set_pb_position(pb_pos);
+	op_widget_set_pb_position(&topw->pb_pos);
 	topw->should_uslider = TRUE;
 	return NULL;
 }
@@ -134,23 +133,23 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 	 */
 	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
 	value = value > upper ? upper : value;
-	long long newval = (long long)value;
+	int64_t newval = (int64_t)value;
 #else
-	long long newval = (long long)adj->value;
+	int64_t newval = (int64_t)adj->value;
 #endif
 	topw->should_uslider = FALSE;
 	topw->pb_pos = newval;
 	pthread_cancel(topw->set_pb_position_thread);
 	pthread_create(&topw->set_pb_position_thread, NULL, &timed_set_pb_position, topw);
 #ifdef GTK3
-	topw->pb_dur = (long long)gtk_adjustment_get_upper(adj);
+	topw->pb_dur = (int64_t)gtk_adjustment_get_upper(adj);
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
 	top_widget_osd_show(topw, time);
 #endif
 #else
-	topw->pb_dur = (long long)adj->upper;
+	topw->pb_dur = (int64_t)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);
@@ -164,7 +163,7 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)topw->hscale);
 	topw->should_uslider = FALSE;
 #ifdef GTK3
-	long long value = (long long)gtk_adjustment_get_value (adj);
+	int64_t value = (int64_t)gtk_adjustment_get_value (adj);
 	value += 10 * 1000 * 1000;
 	double upper = gtk_adjustment_get_upper(adj);
 	/* Work around for hscale issue which allows you to drag
@@ -172,9 +171,9 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	 */
 	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
 	value = value > upper ? upper : value;
-	op_widget_set_pb_position(value);
-	topw->pb_pos = (long long)value;
-	topw->pb_dur = (long long)gtk_adjustment_get_upper(adj);
+	topw->pb_pos = (int64_t)value;
+	op_widget_set_pb_position(&topw->pb_pos);
+	topw->pb_dur = (int64_t)gtk_adjustment_get_upper(adj);
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
@@ -182,9 +181,9 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 #endif
 #else
 	adj->value += 10 * 1000 * 1000;
-	op_widget_set_pb_position(adj->value);
-	topw->pb_pos = (long long)adj->value;
-	topw->pb_dur = (long long)adj->upper;
+	topw->pb_pos = (int64_t)adj->value;
+	op_widget_set_pb_position(&topw->pb_pos);
+	topw->pb_dur = (int64_t)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);
@@ -199,13 +198,13 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)topw->hscale);
 	topw->should_uslider = FALSE;
 #ifdef GTK3
-	long long value = (long long)gtk_adjustment_get_value (adj);
+	int64_t value = (int64_t)gtk_adjustment_get_value (adj);
 	value -= 10 * 1000 * 1000;
 	double lower = gtk_adjustment_get_lower(adj);
 	value = value < lower ? lower : value;
-	op_widget_set_pb_position(value);
-	topw->pb_pos = (long long)value;
-	topw->pb_dur = (long long)gtk_adjustment_get_upper(adj);
+	topw->pb_pos = (int64_t)value;
+	op_widget_set_pb_position(&topw->pb_pos);
+	topw->pb_dur = (int64_t)gtk_adjustment_get_upper(adj);
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)topw->time_label));
@@ -213,9 +212,9 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 #endif
 #else
 	adj->value -= 10 * 1000 * 1000;
-	op_widget_set_pb_position(adj->value);
-	topw->pb_pos = (long long)adj->value;
-	topw->pb_dur = (long long)adj->upper;
+	topw->pb_pos = (int64_t)adj->value;
+	op_widget_set_pb_position(&adj->value);
+	topw->pb_dur = (int64_t)adj->upper;
 	update_pb_position_ui(topw);
 #ifndef NO_OSD
 	top_widget_osd_show(topw, ((GtkLabel *)topw->time_label)->label);

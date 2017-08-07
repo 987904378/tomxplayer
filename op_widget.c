@@ -130,7 +130,7 @@ static void calc_window_da_diff(op_widget_t *temp) {
 	temp->diff_h = temp->window_h - temp->da_h;
 }
 
-int op_widget_status(long long pbpos[]) {
+int op_widget_status(int64_t pbpos[]) {
 	return opc_status(pbpos);
 }
 
@@ -149,8 +149,8 @@ int op_widget_set_volume(double vol) {
 	return opc_set_volume(vol);
 }
 
-void op_widget_set_pb_position(unsigned long pos) {
-	opc_set_pb_position(pos);
+void op_widget_set_pb_position(int64_t *ms) {
+	opc_set_pb_position(ms);
 }
 
 void op_widget_hidevideo(op_widget_t *opw) {

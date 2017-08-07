@@ -214,7 +214,7 @@ void op_dbus_send_setvideopos(int pos[]) {
 	list_free(&args);
 }
 
-void op_dbus_send_setposition(long long microsec_position) {
+void op_dbus_send_setposition(int64_t *ms) {
 	char *value1 = "/not/used";
 	int type1 = DBUS_TYPE_OBJECT_PATH;
 	int type2 = DBUS_TYPE_INT64;
@@ -222,12 +222,12 @@ void op_dbus_send_setposition(long long microsec_position) {
 	list_add_entry(&args, &type1);
 	list_add_entry(&args, &value1);
 	list_add_entry(&args, &type2);
-	list_add_entry(&args, &microsec_position);
+	list_add_entry(&args, ms);
 	send_message(MPRIS_NAME, "SetPosition", &args, NULL);
 	list_free(&args);
 }
 
-void op_dbus_send_setalpha(long long alpha) {
+void op_dbus_send_setalpha(int alpha) {
 	char *value1 = "/not/used";
 	int type1 = DBUS_TYPE_OBJECT_PATH;
 	int type2 = DBUS_TYPE_INT64;
@@ -240,8 +240,8 @@ void op_dbus_send_setalpha(long long alpha) {
 	list_free(&args);
 }
 
-long long op_dbus_send_duration() {
-	long long ret = 0;
+int64_t op_dbus_send_duration() {
+	int64_t ret = 0;
 	char *value1 = MPRIS_NAME;
 	int type1 = DBUS_TYPE_STRING;
 	char *value2 = "Duration";
@@ -256,8 +256,8 @@ long long op_dbus_send_duration() {
 	return ret;
 }
 
-long long op_dbus_send_position() {
-	long long ret = 0;
+int64_t op_dbus_send_position() {
+	int64_t ret = 0;
 	char *value1 = MPRIS_NAME;
 	int type1 = DBUS_TYPE_STRING;
 	char *value2 = "Position";

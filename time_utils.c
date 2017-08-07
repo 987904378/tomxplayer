@@ -22,24 +22,32 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "time_utils.h"
+
+#define TAG "time_utils"
 
 /* Convert microseconds to formated time HH:MM:SS
  */
-int ms_to_time(unsigned long ms, char **dest) {
+int ms_to_time(int64_t *ms1, char **dest) {
+	int64_t ms = *ms1;
 	if(ms >= 86400000000) {
 		fprintf(stderr, "Can not convert microseconds >= 24 hours\n");
 		return 1;
 	}
-	long hours = ms / 1000 / 1000 / 60 / 60;
+	if(ms == 0) {
+		asprintf(dest, "%s", "00:00:00");
+		return 0;
+	}
+	int64_t hours = ms / 1000 / 1000 / 60 / 60;
 	hours = floor(hours);
 	ms -= hours * 60 * 60 * 1000 * 1000;
-	long minutes = ms / 1000 / 1000 / 60;
+	int64_t minutes = ms / 1000 / 1000 / 60;
 	minutes = floor(minutes);
 	ms -= minutes * 60 * 1000 * 1000;
-	long seconds = ms / 1000 / 1000;
+	int64_t seconds = ms / 1000 / 1000;
 	seconds = floor(seconds);
 
-	asprintf(dest,"%.2ld:%.2ld:%.2ld",hours,minutes,seconds);
+	asprintf(dest,"%.2lld:%.2lld:%.2lld",hours,minutes,seconds);
 	return 0;
 }
 

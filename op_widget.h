@@ -24,6 +24,7 @@
 #include <gtk/gtk.h>
 #include <pthread.h>
 #include "op_control.h"
+
 #ifndef NO_OSD
 #include "osd_rpi/text_render.h"
 #endif
@@ -55,8 +56,8 @@ typedef struct {
 #endif
 } op_widget_t;
 
-void op_widget_set_pb_position(unsigned long pos);
-int op_widget_status(long long pbpos[]);
+void op_widget_set_pb_position(int64_t *ms);
+int op_widget_status(int64_t pbpos[]);
 void op_widget_hidevideo(op_widget_t *opw);
 void op_widget_unhidevideo(op_widget_t *opw);
 void op_widget_toggle_playpause();

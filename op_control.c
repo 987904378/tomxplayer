@@ -144,7 +144,7 @@ void opc_update_pos(int tpos[]) {
 	op_dbus_send_setvideopos(tpos);
 }
 
-int opc_status(long long pbpos[]) {
+int opc_status(int64_t pbpos[]) {
 	pbpos[0] = op_dbus_send_duration();
 	pbpos[1] = op_dbus_send_position();
 	return 0; 
@@ -160,9 +160,9 @@ int opc_set_volume(double vol) {
 	return op_dbus_send_volume(vol);
 }
 
-void opc_set_pb_position(unsigned long pos) {
+void opc_set_pb_position(int64_t *ms) {
 	if(!is_running) return;
-	op_dbus_send_setposition((long long)pos);
+	op_dbus_send_setposition(ms);
 }
 
 void opc_hidevideo() {
@@ -185,7 +185,7 @@ void opc_set_aspect(char * aspect) {
 void opc_set_alpha(int alpha) {
 	alpha1 = alpha;
 	if(!is_running) return;
-	op_dbus_send_setalpha((long long) alpha);
+	op_dbus_send_setalpha(alpha);
 }
 
 int opc_is_running() {
