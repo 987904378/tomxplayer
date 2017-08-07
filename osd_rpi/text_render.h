@@ -23,7 +23,6 @@
 #define TEXT_RENDER_H
 #include <stdint.h>
 #include <unistd.h>
-#include <semaphore.h>
 #include <pthread.h>
 #include "vgfont.h"
 #include "bcm_host.h"
@@ -46,7 +45,7 @@ typedef struct {
 	int showing;
 	int layer;
 	uint32_t alpha;
-	sem_t sem;
+	pthread_mutex_t mutex;
 	uint32_t text_size;
 	pthread_t thread;
 	tr_display_pos_t position;

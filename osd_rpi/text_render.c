@@ -39,7 +39,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string.h>
 #include <assert.h>
 #include <unistd.h>
-#include <semaphore.h>
 #include <pthread.h>
 
 #include "bcm_host.h"
@@ -59,9 +58,7 @@ static int32_t render_subtitle(text_render_t *tr)
    uint32_t width=0, height=0, x=0, y=0;
    int32_t s=0;
    uint32_t img_w, img_h;
-   sem_wait(&tr->sem);
    char *textt = strdup(tr->text);
-   sem_post(&tr->sem);
    uint32_t text_length = strlen(textt);
 
    graphics_get_resource_size(tr->img, &img_w, &img_h);
@@ -71,9 +68,7 @@ static int32_t render_subtitle(text_render_t *tr)
 
    s = graphics_resource_text_dimensions_ext(tr->img, textt, text_length, &width, &height, tr->text_size);
    if(width > tr->max_width) {
-   		sem_wait(&tr->sem);
    		tr->text = strndup(textt,text_length - 3);
-   		sem_post(&tr->sem);
    		s = render_subtitle(tr);
    } else {
        switch(tr->position) {
@@ -135,7 +130,7 @@ text_render_t *tr_new() {
 	next_layer ++;
 	temp->layer = next_layer;
 	temp->alpha = 0xff;
-	sem_init(&temp->sem,0,1);
+	pthread_mutex_init(&temp->mutex, NULL);
 	temp->max_width = 100;
 	temp->max_height = 100;
 	temp->text_size = 30;
@@ -146,35 +141,34 @@ text_render_t *tr_new() {
 }
 
 void tr_set_xy(text_render_t *tr, uint32_t cx, uint32_t cy) {
-	sem_wait(&tr->sem);
+	pthread_mutex_lock(&tr->mutex);
 	tr->y = cy;
 	tr->x = cx;
-	sem_post(&tr->sem);
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 void tr_set_max_width(text_render_t *tr, uint32_t mw) {
-	sem_wait(&tr->sem);
+	pthread_mutex_lock(&tr->mutex);
 	tr->max_width = mw;
-	sem_post(&tr->sem);
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 void tr_set_max_height(text_render_t *tr, uint32_t mh) {
-	sem_wait(&tr->sem);
+	pthread_mutex_lock(&tr->mutex);
 	tr->max_height = mh;
-	sem_post(&tr->sem);
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 void tr_set_text_size(text_render_t *tr, uint32_t tz) {
-	sem_wait(&tr->sem);
+	pthread_mutex_lock(&tr->mutex);
 	tr->text_size = tz;
-	sem_post(&tr->sem);
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 void tr_stop(text_render_t *tr) {
-	sem_wait(&tr->sem); 
-	tr->alpha = 1;
-	sem_post(&tr->sem);
-	pthread_join(tr->thread, NULL);
+	pthread_mutex_lock(&tr->mutex);
+	tr->alpha = 2;
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 void tr_deinit() {
@@ -184,9 +178,9 @@ void tr_deinit() {
 }
 
 void tr_set_text(text_render_t *tr, char * t) {
-	sem_wait(&tr->sem);
+	pthread_mutex_lock(&tr->mutex);
 	tr->text = strdup(t);
-	sem_post(&tr->sem);
+	pthread_mutex_unlock(&tr->mutex);
 }
 
 static void *tr_show(void * arg)
@@ -196,16 +190,20 @@ static void *tr_show(void * arg)
    tr->alpha = 0xff;
 
    graphics_resource_fill(tr->img, 0, 0, tr->disp_width, tr->disp_height, GRAPHICS_RGBA32(0,0,0,0x00));
-
+start:
    graphics_display_resource(tr->img, 0, tr->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 1);
-
-   while (tr->alpha > 0) {
+   while (tr->alpha -= 1) {
+   	  pthread_mutex_lock(&tr->mutex);
       graphics_resource_fill(tr->img, 0, 0, tr->disp_width, tr->disp_height, GRAPHICS_RGBA32(0,0,0,0));
       render_subtitle(tr);
       graphics_update_displayed_resource(tr->img, 0, 0, 0, 0);
-      tr->alpha -= 1;
+      pthread_mutex_unlock(&tr->mutex);
+      usleep(2000);
    }
    graphics_display_resource(tr->img, 0, tr->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 0);
+   while(tr->alpha == 0)
+     usleep(100000);
+   goto start;
    tr->showing = 0;
    return NULL;
 }
@@ -214,8 +212,11 @@ void tr_show_thread(text_render_t *tr) {
 	if(!tr->showing && osd_enable.int_value) {
 		tr->showing = 1;
 		pthread_create(&tr->thread, NULL, &tr_show, tr);
-	} else
+	} else if(osd_enable.int_value) {
+		pthread_mutex_lock(&tr->mutex);
 		tr->alpha = 0xff;
+		pthread_mutex_unlock(&tr->mutex);
+	}
 }
 
 #endif
