@@ -62,6 +62,7 @@ static GtkToolItem *fullscreen;
 static gboolean _fullscreen = FALSE;
 static gboolean _minimized = FALSE;
 static gboolean _focused = TRUE;
+static gboolean _dialog_showing = FALSE;
 
 static pthread_t fs_hide_controls_thread;
 #ifdef GTK3
@@ -128,13 +129,12 @@ gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointe
 
 static void * timed_hide_controls(void * arg) {
     int c = 0;
-	pthread_detach(pthread_self());
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
 	while(c < 499) {
 		usleep(10000);
 		c++;
 	}
-	if(_fullscreen) {
+	if(_fullscreen && !_dialog_showing) {
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
 #ifdef GTK3
 		g_main_context_invoke(context, &hide_controls, NULL);
@@ -149,8 +149,9 @@ static void * timed_hide_controls(void * arg) {
 
 static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer user_data) {
 	show_controls(); 
-	if(_fullscreen) {
+	if(_fullscreen && !_dialog_showing) {
 		pthread_cancel(fs_hide_controls_thread);
+		pthread_join(fs_hide_controls_thread, NULL);
 		pthread_create(&fs_hide_controls_thread,NULL, &timed_hide_controls,NULL);
 	}
 	return FALSE;
@@ -172,6 +173,7 @@ static void window_realize(GtkWidget *widget, gpointer data) {
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_hidevideo(topw);
+	_dialog_showing = TRUE;
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
@@ -184,6 +186,7 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
 	top_widget_unhidevideo(topw);
+	_dialog_showing = FALSE;
 }
 
 static void ytdl_out_cb(char *out_line) {
@@ -199,6 +202,7 @@ static void ytdl_url_cb(char *url) {
 
 static void url_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_hidevideo(topw);
+	_dialog_showing = TRUE;
 	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
 	int response = gtk_dialog_run (GTK_DIALOG (ud->window));
 	if (response == GTK_RESPONSE_ACCEPT) {
@@ -209,8 +213,9 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 		} else
 			top_widget_unhidevideo(topw);
 	} else if (response == GTK_RESPONSE_APPLY) {
-	if(ud->url != NULL) {
+		if(ud->url != NULL) {
 			gtk_widget_destroy((GtkWidget *)ud->window);
+			_dialog_showing = FALSE;
 			ytdl_register_output_cb(&ytdl_out_cb);
 			ytdl_register_url_cb(&ytdl_url_cb);
 			ytdl_cget_url_thread(ud->url);
@@ -220,7 +225,9 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 	} else {
 		gtk_widget_destroy((GtkWidget *)ud->window);
 		top_widget_unhidevideo(topw);
+		_dialog_showing = FALSE;
 	}
+	window_motion_notify_event(NULL, NULL, NULL);
 }
 
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
@@ -334,6 +341,7 @@ gboolean video_filter_cb(const GtkFileFilterInfo *filter_info, gpointer data) {
 
 static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	GtkWidget *dialog;
+	_dialog_showing = TRUE;
 	top_widget_hidevideo(topw);
 	dialog = gtk_file_chooser_dialog_new (
 			"Open File", 
@@ -364,12 +372,16 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 		char *filename;
 		filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));
 		gtk_widget_destroy (dialog);
+		//top_widget_unhidevideo(topw);
 		top_widget_set_video_path(topw, filename);
 		top_widget_play_path(topw);
 		g_free (filename);
-	} else
+	} else {
 		gtk_widget_destroy (dialog);
-	top_widget_unhidevideo(topw);
+		top_widget_unhidevideo(topw);
+	}
+	_dialog_showing = FALSE;
+	window_motion_notify_event(NULL, NULL, NULL);
 }
 
 static void about_clicked(GtkWidget *widget, gpointer user_data) {
@@ -379,6 +391,7 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 	const char *authors[] = { "Jonathan Dennis <theonejohnnyd@gmail.com>", NULL };
 
 #endif
+	_dialog_showing = TRUE;
 	GtkAboutDialog *ad = (GtkAboutDialog *)gtk_about_dialog_new();
 	gtk_window_set_transient_for((GtkWindow *)ad, (GtkWindow *)window);
 	gtk_about_dialog_set_program_name(ad, "Tactical OMXPlayer Gtk (tomxplayer)");
@@ -396,6 +409,8 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 	gtk_dialog_run((GtkDialog *) ad);
 	gtk_widget_destroy((GtkWidget *)ad);
 	top_widget_unhidevideo(topw);
+	_dialog_showing = FALSE;
+	window_motion_notify_event(NULL, NULL, NULL);
 }
 
 static void build_drawing_area(GtkBox *vbox) {
