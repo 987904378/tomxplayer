@@ -151,6 +151,16 @@ void op_dbus_send_pause() {
 	list_free(&args);
 }
 
+void op_dbus_send_stop() {
+	int value1 = 15;
+	int type1 = DBUS_TYPE_INT32;
+	list_t args = list_create("args",2, 1);
+	list_add_entry(&args, &type1);
+	list_add_entry(&args, &value1);
+	send_message(MPRIS_NAME, "Action", &args, NULL);
+	list_free(&args);
+}
+
 void op_dbus_send_hidevideo() {
 	int value1 = 28;
 	int type1 = DBUS_TYPE_INT32;

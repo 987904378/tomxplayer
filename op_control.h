@@ -22,18 +22,16 @@
 #ifndef OP_CONTROL_H
 #define OP_CONTROL_H
 
-void start_omxplayer_thread(int pos[], char * file_name);
-void update_pos_thread(int pos[]);
-void set_pb_position(unsigned long pos);
-int status(long long pbpos[]);
-void hidevideo();
-void unhidevideo();
-void toggle_playpause();
-void stop_omxplayer();
-int set_volume(double vol);
-int ms_to_time(unsigned long ms, char * dest);
-void set_aspect(char *aspect);
-void set_aout(char * aout);
-int op_is_running();
+void opc_start_omxplayer_thread(int pos[], char * file_name);
+void opc_update_pos(int pos[]);
+void opc_set_pb_position(unsigned long pos);
+int opc_status(long long pbpos[]);
+void opc_hidevideo();
+void opc_unhidevideo();
+void opc_toggle_playpause();
+void opc_stop_omxplayer();
+int opc_set_volume(double vol);
+void opc_set_aspect(char *aspect);
+int opc_is_running();
 
 #endif

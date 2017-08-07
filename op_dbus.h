@@ -20,6 +20,7 @@
 //  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 void op_dbus_send_pause();
+void op_dbus_send_stop();
 void op_dbus_send_hidevideo();
 void op_dbus_send_unhidevideo();
 void op_dbus_send_setaspectmode(char *aspect);

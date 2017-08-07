@@ -89,15 +89,15 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 	pb_pos_poll_cancel = 1;
 	pthread_cancel(pb_pos_poll_thread);
 	pthread_join(pb_pos_poll_thread, NULL);
-	stop_omxplayer();
+	opc_stop_omxplayer();
 	gtk_main_quit ();
 }
 
 static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *event, gpointer user_data) {
 	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
-		hidevideo();
+		opc_hidevideo();
 	} else { 
-		unhidevideo();
+		opc_unhidevideo();
 	}
 	return FALSE;
 }
@@ -128,21 +128,21 @@ static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *ev
 }
 
 static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data) {
-	set_pb_position((unsigned long)value);
+	opc_set_pb_position((unsigned long)value);
 	return FALSE;
 }
 
 static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	unsigned long newpos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
 	newpos += 10 * 1000 * 1000;
-	set_pb_position(newpos);
+	opc_set_pb_position(newpos);
 	return FALSE;
 }
 
 static int do_volume(int vol) {
 	int ret = 0;
 	double dvol = (double)vol / 100;
-	ret = set_volume(dvol);
+	ret = opc_set_volume(dvol);
 	if(!ret)
 		settings_save(&volume);
 	return ret;
@@ -165,7 +165,7 @@ static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
 static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	unsigned long newpos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
 	newpos -= 10 * 1000 * 1000;
-	set_pb_position(newpos);
+	opc_set_pb_position(newpos);
 	return FALSE;
 }
 
@@ -174,11 +174,11 @@ static void calc_render_pos() {
 	pos[1] = window_y + da_y;
 	pos[2] = pos[0] + da_w;
 	pos[3] = pos[1] + da_h;
-	update_pos_thread(pos); 
+	opc_update_pos(pos); 
 }
 
 static void pause_clicked( GtkWidget *widget, gpointer data ) {
-	toggle_playpause();
+	opc_toggle_playpause();
 }
 
 static void * restore_volume(void * arg) {
@@ -197,11 +197,11 @@ static void *pb_pos_poll(void * arg) {
 	pb_pos_poll_running = 1; 
 	while(!pb_pos_poll_cancel) {
 		usleep(800 * 1000);
-		if(!op_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
+		if(!opc_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
 			mp_move_next(_playlist);
 			play_path();
 		}
-		if(status(pb_pos))
+		if(opc_status(pb_pos))
 			continue;
 		if(pb_pos_poll_cancel)
 			break;
@@ -246,7 +246,7 @@ static void play_path() {
 	mp_get_current(_playlist, vpath);
 	sprintf(title, "%s - %s","tomxplayer", vpath);
 	gtk_window_set_title((GtkWindow *)window, title);
-	start_omxplayer_thread(pos, vpath);
+	opc_start_omxplayer_thread(pos, vpath);
 	if(!pb_pos_poll_running) {
 		pthread_create(&pb_pos_poll_thread,NULL, &pb_pos_poll,NULL); 
 	}
@@ -260,13 +260,13 @@ static void previous_clicked( GtkWidget *widget, gpointer data ) {
 	if(cont_pb.int_value) {
 		unsigned long pos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
 		if(pos > (1000 * 5000))
-			set_pb_position(0);
+			opc_set_pb_position(0);
 		else {
 			mp_move_previous(_playlist);
 			play_path();
 		}
 	} else {
-		set_pb_position(0);
+		opc_set_pb_position(0);
 	}
 }
 
@@ -278,14 +278,14 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 }
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
-	hidevideo();
+	opc_hidevideo();
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
-	unhidevideo();
+	opc_unhidevideo();
 }
 
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
@@ -337,7 +337,7 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 
 static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	GtkWidget *dialog;
-	hidevideo();
+	opc_hidevideo();
 	dialog = gtk_file_chooser_dialog_new (
 			"Open File", 
 			(GtkWindow *)window,
@@ -353,7 +353,7 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 		g_free (filename);
 	}
 	gtk_widget_destroy (dialog);
-	unhidevideo();
+	opc_unhidevideo();
 }
 
 static gboolean window_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
@@ -507,7 +507,7 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 
 static void stretch_updated(void *setting) {
 	setting_t *set = (setting_t *)setting;
-	set_aspect(set->int_value ? "stretch":"Letterbox");
+	opc_set_aspect(set->int_value ? "stretch":"Letterbox");
 	LOGD(TAG, "%s", "stretch updated");
 }
 
@@ -566,6 +566,6 @@ int main (int argc, char * argv[]) {
 			play_path();
 	}
 	gtk_main();
-	stop_omxplayer();
+	opc_stop_omxplayer();
 	return 0;
 }
