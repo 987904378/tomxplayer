@@ -75,6 +75,7 @@ else
 endif
 
 COMMON_CFLAGS := \
+	-DVERSION=\"$(shell ./version.sh)\" \
 	-I/usr/include \
 	-I/usr/include/freetype2 \
 	-I/usr/include/dbus-1.0 \

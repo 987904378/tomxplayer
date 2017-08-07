@@ -31,7 +31,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <signal.h>
-#include "version.h"
 #include "time_utils.h"
 #include "osd_rpi/text_render.h"
 #include <libgen.h>
