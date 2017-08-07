@@ -620,7 +620,7 @@ int main (int argc, char * argv[]) {
 		}
 	}
 	GError *gerr = NULL;
-	gtk_init(&argc ,&argv);
+	gtk_init(0 ,NULL);
 	gdk_threads_init();
 	init_settings();
 #ifndef x86
