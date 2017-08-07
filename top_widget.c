@@ -42,12 +42,19 @@ static int do_volume(int vol) {
 }
 
 static void * restore_volume(void * arg) {
+	int count = 0;
 	pthread_detach(pthread_self());
-	while(do_volume(volume.int_value))
+	while(do_volume(volume.int_value) && count < 40) {
 		usleep(100 * 1000);
+		count += 1;
+	}
 	top_widget_t *topw = (top_widget_t *)arg;
-	if(!topw->op_widget->minimized)
+	if(!topw->op_widget->minimized && count <= 40)
 		op_widget_unhidevideo();
+	else {
+		LOGE(TAG, "%s" ,"Could not restore volume? Did omxplayer actually start?");
+		top_widget_stop(topw);
+	}
 	return NULL;
 }
 
