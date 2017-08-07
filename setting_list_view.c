@@ -27,16 +27,18 @@
 #include "log.h"
 #include "list.h"
 
+#define MARGIN 3
+
 #define TAG "setting_list_view"
 
 static void setting_vbox_size_allocated(GtkWidget *widget, GtkAllocation *allocation, gpointer user_data) {
 	GtkWidget *label_desc = (GtkWidget *)user_data;
-	gtk_widget_set_size_request((GtkWidget *)label_desc,allocation->width - 40, -1);
+	gtk_widget_set_size_request((GtkWidget *)label_desc,allocation->width - (MARGIN * 8), -1);
 }
 static void build_setting_viewer_header(GtkVBox *vbox, setting_t *setting) {
 	GtkWidget * label_title = gtk_label_new(setting->long_name);
 	gtk_misc_set_alignment((GtkMisc *)label_title,0,0);
-	gtk_box_pack_start((GtkBox *)vbox, label_title, FALSE, FALSE, 10);
+	gtk_box_pack_start((GtkBox *)vbox, label_title, FALSE, FALSE, MARGIN);
 }
 static void build_setting_viewer_footer(GtkVBox *vbox, setting_t *setting) {
 	GtkWidget *label_desc = gtk_label_new(setting->desc);
@@ -45,8 +47,8 @@ static void build_setting_viewer_footer(GtkVBox *vbox, setting_t *setting) {
 	gtk_widget_set_size_request((GtkWidget *)label_desc,350, 100);
 	gtk_misc_set_alignment((GtkMisc *)label_desc,0,0);
 	gtk_widget_set_sensitive((GtkWidget *)label_desc, FALSE);
-	gtk_box_pack_start((GtkBox *)vbox, label_desc, FALSE, FALSE, 20);
-	gtk_box_pack_end((GtkBox *)vbox, gtk_hseparator_new(), FALSE, FALSE, 10);
+	gtk_box_pack_start((GtkBox *)vbox, label_desc, FALSE, FALSE, MARGIN * 2);
+	gtk_box_pack_end((GtkBox *)vbox, gtk_hseparator_new(), FALSE, FALSE, MARGIN * 2);
 }
 
 static void entry_changed(GtkEditable *editable, gpointer user_data) {
@@ -79,7 +81,7 @@ static GtkWidget *gtk_string_setting_viewer_new(setting_t *setting) {
 		gtk_entry_set_text(entry,setting->string_value);
 		gtk_signal_connect((GtkObject *)entry,"changed",G_CALLBACK(entry_changed), setting);
 	}
-	gtk_box_pack_start((GtkBox *)vbox, combo_or_entry, FALSE, FALSE, 10);
+	gtk_box_pack_start((GtkBox *)vbox, combo_or_entry, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
 	gtk_widget_show_all(vbox);
 	return vbox;
@@ -97,7 +99,7 @@ static GtkWidget *gtk_bool_setting_viewer_new(setting_t *setting) {
 	GtkWidget *checkbutton = gtk_check_button_new_with_label (setting->long_name);
 	gtk_toggle_button_set_active((GtkToggleButton *)checkbutton, (gboolean)setting->int_value);
 	gtk_signal_connect((GtkObject *)checkbutton,"toggled",G_CALLBACK(checkbutton_toggled), setting);
-	gtk_box_pack_start((GtkBox *)vbox, checkbutton, FALSE, FALSE, 10);
+	gtk_box_pack_start((GtkBox *)vbox, checkbutton, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
 	gtk_widget_show_all(vbox);
 	return vbox;
@@ -116,7 +118,7 @@ static GtkWidget *gtk_int_setting_viewer_new(setting_t *setting) {
 	GtkWidget *spinbutton = gtk_spin_button_new_with_range((gdouble)setting->min,(gdouble)setting->max, 1);
 	gtk_signal_connect((GtkObject *)spinbutton,"value-changed",G_CALLBACK(spinbutton_value_changed), setting);
 	gtk_spin_button_set_value((GtkSpinButton *)spinbutton, setting->int_value);
-	gtk_box_pack_start((GtkBox *)vbox, spinbutton, FALSE, FALSE, 10);
+	gtk_box_pack_start((GtkBox *)vbox, spinbutton, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
 	gtk_widget_show_all(vbox);
 	return vbox;
@@ -126,9 +128,9 @@ setting_list_view_t *gtk_setting_list_view_new() {
 	setting_list_view_t *temp = malloc(sizeof(setting_list_view_t));
 	temp->this = gtk_scrolled_window_new(NULL, NULL);
 	gtk_scrolled_window_set_policy((GtkScrolledWindow *)temp->this,GTK_POLICY_NEVER,GTK_POLICY_AUTOMATIC);
-	temp->vbox = gtk_vbox_new(FALSE, 6);
+	temp->vbox = gtk_vbox_new(FALSE, 0);
 	gtk_scrolled_window_add_with_viewport((GtkScrolledWindow *)temp->this, temp->vbox);
-	gtk_container_set_border_width((GtkContainer *)temp->vbox, 10);
+	gtk_container_set_border_width((GtkContainer *)temp->vbox, MARGIN * 4);
 	temp->vbox_children = list_create("vbox_children",1,1);
 	return temp;
 }
