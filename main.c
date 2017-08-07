@@ -90,9 +90,6 @@ static pthread_t set_pb_position_thread;
 static GdkRGBA *form_orig;
 static GdkRGBA *label_orig;
 static GdkRGBA *toolbar_orig;
-static GdkRGBA *form_fs;
-static GdkRGBA *label_fs;
-static GdkRGBA *toolbar_fs;
 #else
 static GtkStyle *form_orig;
 static GtkStyle *label_orig;
@@ -616,7 +613,6 @@ static gboolean window_configure_event(GtkWidget *widget, GdkEventConfigure *eve
 	} else if (widget == window) {
 		window_x = event->x;
 		window_y = event->y;
-		gtk_widget_queue_resize ((GtkWidget *)drawing_area); 
 		calc_render_pos();
 	} 
 	return FALSE;
@@ -866,11 +862,6 @@ static void init_settings() {
 
 }
 
-//static gboolean test_thread(gpointer p) {
-//	LOGD(TAG, "%s", "test_thread");
-//	return TRUE;
-//}
-
 int main (int argc, char * argv[]) {
 	signal(SIGSEGV, &signal_handler);
 	signal(SIGQUIT, &signal_handler);
@@ -916,7 +907,6 @@ int main (int argc, char * argv[]) {
 	g_signal_connect((GObject *)window, "focus-out-event", G_CALLBACK(window_focus_out_event),NULL);
 	g_signal_connect((GObject *)window, "realize", G_CALLBACK(window_realize),NULL);
 	gtk_window_set_default_size((GtkWindow *)window, 640, 360);
-	//gtk_container_set_resize_mode((GtkContainer *)window,GTK_RESIZE_IMMEDIATE);
 	GtkWidget *vbox = gtk_vbox_new(0, 0); 
 	gtk_container_add((GtkContainer *)window,vbox);
 	build_top_toolbar((GtkBox *)vbox);
