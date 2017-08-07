@@ -67,7 +67,7 @@ media_playlist_t *mp_create_dir_of_file(char * path) {
 	struct dirent *file = NULL;
 	media_playlist_t *plist = mp_create();
 	//TODO: switch to scandir so we can get this list alphsorted.
-	while(file = readdir(dir)) {
+	while((file = readdir(dir))) {
 		sprintf(full_path, "%s/%s",dir_path, file->d_name);
 		if(!is_media_by_ext(full_path)) {
 			list_add_entry(&plist->list, strdup(full_path));
