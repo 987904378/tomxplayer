@@ -33,24 +33,26 @@
 
 #define TAG "media_playlist"
 
-static int is_media_by_ext(const char * path) {
+int is_media_by_ext(const char *path) {
+	char spaced[255];
 	char *extfound;
 	char *ext = rindex(path, '.');
 	if(ext == NULL)
-		return 1;
+		return 0;
 	LOGD(TAG,"'%s' ext=%s",path,ext);
 	if(strlen(ext) > 1)
 		ext += 1;
 	else
-		return 1;
-	extfound = strstr(file_types.string_value, ext);
+		return 0;
+	sprintf(spaced,"%s ", ext);
+	extfound = strstr(file_types.string_value, spaced);
 	if(extfound == NULL)
-		return 1;
-	return 0;
+		return 0;
+	return 1;
 }
 
 static int scandir_filter(const struct dirent *dirent) {
-	return is_media_by_ext(dirent->d_name) ? 0 : 1;
+	return is_media_by_ext(dirent->d_name);
 }
 
 media_playlist_t *mp_create() {

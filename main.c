@@ -596,6 +596,10 @@ static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 	}
 }
 
+gboolean video_filter_cb(const GtkFileFilterInfo *filter_info, gpointer data) {
+	return (gboolean)is_media_by_ext(filter_info->filename) ? TRUE : FALSE;
+}
+
 static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	GtkWidget *dialog;
 	opc_hidevideo();
@@ -616,6 +620,14 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 #endif 
 			GTK_RESPONSE_ACCEPT,
 			NULL);
+	GtkFileFilter *video_filter = gtk_file_filter_new ();
+	gtk_file_filter_add_custom (video_filter,
+                        GTK_FILE_FILTER_FILENAME,
+                        &video_filter_cb,
+                        NULL,
+                        NULL);
+    gtk_file_filter_set_name (video_filter, "Video Files");
+    gtk_file_chooser_add_filter ((GtkFileChooser *)dialog, video_filter);
 	if (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT) {
 		char *filename;
 		filename = gtk_file_chooser_get_filename (GTK_FILE_CHOOSER (dialog));

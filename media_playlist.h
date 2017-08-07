@@ -25,6 +25,7 @@ typedef struct {
 	list_t list;
 } media_playlist_t;
 
+int is_media_by_ext(const char *path);
 media_playlist_t *mp_create();
 media_playlist_t *mp_create_dir_of_file(char * path);
 void mp_add(media_playlist_t *plist, char *full_path);
