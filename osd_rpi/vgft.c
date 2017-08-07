@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Font handling for graphicsx
 
-#ifndef x86
+#ifndef NO_OSD
 
 #include <assert.h>
 #include <stdlib.h>

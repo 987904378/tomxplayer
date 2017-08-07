@@ -62,7 +62,7 @@ else
 	NOTES += "Afaik, omxplayer only runs on the Raspberry Pi. Therefore\n"
 	NOTES += "tomxplayer is only useful on the Raspberry Pi - armv7l.\n"
 	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-	DEFS += -Dx86
+	DEFS += -DNO_OSD
 	OSD_SRC :=
 	OSD_LDFLAGS :=
 	OSD_LDPATHS :=

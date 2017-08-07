@@ -101,7 +101,7 @@ static GtkStyle *toolbar_fs;
 #endif
 static list_t audio_settings;
 static list_t playback_settings;
-#ifndef x86
+#ifndef NO_OSD
 static list_t osd_settings;
 #endif
 static list_t win_settings;
@@ -129,7 +129,7 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 	pb_pos_poll_cancel = 1;
 	pthread_cancel(pb_pos_poll_thread);
 	pthread_join(pb_pos_poll_thread, NULL);
-#ifndef x86
+#ifndef NO_OSD
 	tr_stop();
 	tr_deinit();
 #endif
@@ -141,7 +141,7 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
 		_minimized = TRUE;
 		opc_hidevideo();
-#ifndef x86
+#ifndef NO_OSD
 		tr_stop();
 #endif
 	} else { 
@@ -236,13 +236,13 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 	pthread_create(&set_pb_position_thread, NULL, &timed_set_pb_position, (long long *)newval);
 #ifdef GTK3
 	update_pb_position_ui((long long)newval, (long long)gtk_adjustment_get_upper(adj));
-#ifndef x86
+#ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
 	tr_show_thread(time);
 #endif
 #else
 	update_pb_position_ui((long long)newval, (long long)adj->upper);
-#ifndef x86
+#ifndef NO_OSD
 	tr_show_thread(((GtkLabel *)time_label)->label);
 #endif
 #endif
@@ -257,7 +257,7 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	value += 10 * 1000 * 1000;
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
-#ifndef x86
+#ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
 	tr_show_thread(time);
 #endif
@@ -265,7 +265,7 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	adj->value += 10 * 1000 * 1000;
 	opc_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
-#ifndef x86
+#ifndef NO_OSD
 	tr_show_thread(((GtkLabel *)time_label)->label);
 #endif
 #endif
@@ -281,7 +281,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	value -= 10 * 1000 * 1000;
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
-#ifndef x86
+#ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
 	tr_show_thread(time);
 #endif
@@ -289,7 +289,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	adj->value -= 10 * 1000 * 1000;
 	opc_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
-#ifndef x86
+#ifndef NO_OSD
 	tr_show_thread(((GtkLabel *)time_label)->label);
 #endif
 #endif
@@ -309,7 +309,7 @@ static gboolean vol_up_clicked( GtkWidget *widget, gpointer data ) {
 	volume.int_value = volume.int_value > volume.max ? volume.max : volume.int_value;
 	do_volume(volume.int_value);
 	settings_save(&volume);
-#ifndef x86
+#ifndef NO_OSD
 	char osd_text[255];
 	sprintf(osd_text, "VOL: %d",volume.int_value);
 	if(!_minimized)
@@ -323,7 +323,7 @@ static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
 	volume.int_value = volume.int_value < volume.min ? volume.min : volume.int_value;
 	do_volume(volume.int_value);
 	settings_save(&volume);
-#ifndef x86
+#ifndef NO_OSD
 	char osd_text[255];
 	sprintf(osd_text, "VOL: %d",volume.int_value);
 	if(!_minimized)
@@ -337,7 +337,7 @@ static void calc_render_pos() {
 	pos[1] = window_y + da_y;
 	pos[2] = pos[0] + da_w;
 	pos[3] = pos[1] + da_h;
-#ifndef x86
+#ifndef NO_OSD
 	tr_set_xy((unsigned int)pos[0] + 10,(unsigned int)pos[3] -10);
 	tr_set_max_width((unsigned int)da_w - 20);
 	if(osd_textsize_percent.int_value) {
@@ -350,7 +350,7 @@ static void calc_render_pos() {
 
 static void pause_clicked( GtkWidget *widget, gpointer data ) {
 	_paused = _paused ? FALSE : TRUE;
-#ifndef x86
+#ifndef NO_OSD
 	if(!_minimized)
 		tr_show_thread(_paused ? "Paused" : "Playing");
 #endif
@@ -436,7 +436,7 @@ static void play_path() {
 	}
 	sleep(1);
 	pthread_create(&restore_volume_thread,NULL, &restore_volume,NULL);
-#ifndef x86
+#ifndef NO_OSD
 	if(!_minimized)
 		tr_show_thread(basename(vpath));
 #endif
@@ -479,13 +479,13 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	opc_hidevideo();
-#ifndef x86
+#ifndef NO_OSD
 	tr_stop();
 #endif
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
-#ifndef x86
+#ifndef NO_OSD
 	gtk_preference_dialog_add(pd, &osd_settings);
 #endif
 	gtk_preference_dialog_add(pd, &win_settings);
@@ -788,7 +788,7 @@ static void stretch_updated(void *setting) {
 	opc_set_aspect(set->int_value ? "stretch":"Letterbox");
 	LOGD(TAG, "%s", "stretch updated");
 }
-#ifndef x86
+#ifndef NO_OSD
 static void osd_textsize_updated(void *setting) {
 	if(osd_textsize_percent.int_value) {
 		double percent = osd_textsize.int_value * 0.01;
@@ -818,7 +818,7 @@ static void init_settings() {
 	settings_read(&stretch);
 	settings_read(&audio_out);
 	settings_read(&file_types);
-#ifndef x86
+#ifndef NO_OSD
 	settings_read(&osd_enable);
 	osd_textsize.setting_update_cb = &osd_textsize_updated;
 	settings_read(&osd_textsize);
@@ -842,7 +842,7 @@ static void init_settings() {
 	list_add_entry(&playback_settings, &cont_pb);
 	list_add_entry(&playback_settings, &stretch);
 	list_add_entry(&playback_settings, &file_types);
-#ifndef x86
+#ifndef NO_OSD
 	osd_settings = list_create("On-Screen Display", 2,1);
 	list_add_entry(&osd_settings, &osd_enable);
 	list_add_entry(&osd_settings, &osd_textsize);
@@ -881,7 +881,7 @@ int main (int argc, char * argv[]) {
 	gdk_threads_init();
 #endif
 	init_settings();
-#ifndef x86
+#ifndef NO_OSD
 	tr_init();
 #endif
 	if(argc > 1)

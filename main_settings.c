@@ -96,7 +96,7 @@ setting_t file_types = {
 	"",
 };
 
-#ifndef x86
+#ifndef NO_OSD
 setting_t osd_enable = {
 	"osd_enable",
 	"On-Screen Display",

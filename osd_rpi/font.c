@@ -48,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   * This API doesn't support unicode at all at present, nor UTF-8.
   */
 
-#ifndef x86
+#ifndef NO_OSD
 
 #include <fcntl.h>
 #include <stdio.h>

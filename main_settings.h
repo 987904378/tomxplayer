@@ -29,7 +29,7 @@ setting_t stretch;
 setting_t volume;
 setting_t audio_out;
 setting_t file_types;
-#ifndef x86
+#ifndef NO_OSD
 setting_t osd_enable;
 setting_t osd_textsize;
 setting_t osd_textsize_percent;

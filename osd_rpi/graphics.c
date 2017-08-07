@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Graphics library for VG
 
-#ifndef x86
+#ifndef NO_OSD
 
 #include <stdio.h>
 #include <stdlib.h>

@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 // Test app for VG font library.
 
-#ifndef x86
+#ifndef NO_OSD
 
 #ifndef RESOURCE_DIR
 #define RESOURCE_DIR "."
