@@ -33,12 +33,12 @@
 
 #define TAG "media_playlist"
 
-static int is_media_by_ext(char * full_path) {
+static int is_media_by_ext(const char * path) {
 	char *extfound;
-	char *ext = rindex(full_path, '.');
+	char *ext = rindex(path, '.');
 	if(ext == NULL)
 		return 1;
-	LOGD(TAG,"'%s' ext=%s",full_path,ext);
+	LOGD(TAG,"'%s' ext=%s",path,ext);
 	if(strlen(ext) > 1)
 		ext += 1;
 	else
@@ -47,6 +47,10 @@ static int is_media_by_ext(char * full_path) {
 	if(extfound == NULL)
 		return 1;
 	return 0;
+}
+
+static int scandir_filter(const struct dirent *dirent) {
+	return is_media_by_ext(dirent->d_name) ? 0 : 1;
 }
 
 media_playlist_t *mp_create() {
@@ -59,24 +63,23 @@ media_playlist_t *mp_create() {
 media_playlist_t *mp_create_dir_of_file(char * path) {
 	char full_path[255];
 	char *dir_path = dirname(strdup(path));
-	DIR *dir = opendir(dir_path);
-	if(dir == NULL) {
-		LOGE(TAG, "Could not open dir '%s':%s",dir_path, strerror(errno));
+	struct dirent **files = NULL;
+	media_playlist_t *plist = mp_create();
+	int file_count = scandir(dir_path, &files, scandir_filter, alphasort);
+	if(file_count < 1) {
+		LOGE(TAG, "No media files found for dir in %s",dir_path);
+		if(file_count < 0)
+			LOGE(TAG, "%s", strerror(errno));
 		return NULL;
 	}
-	struct dirent *file = NULL;
-	media_playlist_t *plist = mp_create();
-	//TODO: switch to scandir so we can get this list alphsorted.
-	while((file = readdir(dir))) {
-		sprintf(full_path, "%s/%s",dir_path, file->d_name);
-		if(!is_media_by_ext(full_path)) {
-			if(!strcmp(path,full_path))
-				plist->index = plist->list.count;
-			list_add_entry(&plist->list, strdup(full_path));
-			LOGI(TAG,"Added %s to playlist.",full_path);
-		}
+	for(int i = 0; i < file_count; i ++) {
+		sprintf(full_path, "%s/%s",dir_path, files[i]->d_name);
+		free(files[i]);
+		if(!strcmp(path,full_path))
+			plist->index = plist->list.count;
+		list_add_entry(&plist->list, strdup(full_path));
+		LOGI(TAG,"Added %s to playlist.",full_path);
 	}
-	closedir(dir);
 	free(dir_path);
 	return plist;
 }
