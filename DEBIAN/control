@@ -3,7 +3,7 @@ Version: %version%
 Section: base
 Priority: optional
 Architecture: armhf
-Depends: libgtk2.0-0 (>= 2.0), dbus (>=1.10)
+Depends: libgtk2.0-0 (>= 2.0), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)
 Maintainer: Jonathan Jason Dennis <theonejohnnyd@gmail.com>
 Description: tomxplayer
  tomxplayer is a gui video player for the Raspberry Pi and wrapper for omxplayer.
