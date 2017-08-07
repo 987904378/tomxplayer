@@ -29,6 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef x86
 
+#ifndef RESOURCE_DIR
+#define RESOURCE_DIR "."
+#endif
+#define FONT_DIR RESOURCE_DIR"/osd_rpi"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -84,7 +89,7 @@ void tr_init() {
 
    bcm_host_init();
 
-   s = gx_graphics_init("osd_rpi");
+   s = gx_graphics_init(FONT_DIR);
    assert(s == 0);
    sem_init(&sem,0,1);
 }

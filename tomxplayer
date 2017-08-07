@@ -1,0 +1,11 @@
+#!/bin/bash
+cd $(dirname $(realpath $0))
+if [[ "$(mate-session-inhibit --version)" != "" ]]; then
+	mate-session-inhibit  --reason "tomxplayer might be playing a video" --inhibit logout:suspend:switch-user:idle ./tomxplayer.bin "${@}"
+elif [[ "$(systemd-inhibit --version)" != "" ]]; then
+	systemd-inhibit --what=sleep:idle --who="tomxplayer" --why="tomxplayer might be playing a video" --mode=block ./tomxplayer.bin "${@}"
+else
+	echo "Neither mate-session-inhibit or systemd-inhibit was found. Screensaver might be a problem." >&2
+	./tomxplayer.bin "${@}"
+fi
+killall omxplayer.bin

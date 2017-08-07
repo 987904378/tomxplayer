@@ -38,6 +38,11 @@
 
 #define TAG "main"
 
+#ifndef RESOURCE_DIR
+#define RESOURCE_DIR "."
+#endif
+#define ICON_PATH RESOURCE_DIR"/tomxplayer.png"
+
 static GtkWidget * window;
 static GtkWidget *drawing_area;
 static GtkWidget *hscale;
@@ -664,7 +669,7 @@ int main (int argc, char * argv[]) {
 #endif
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title((GtkWindow *)window,"tomxplayer"); 
-	gtk_window_set_icon((GtkWindow *)window,gdk_pixbuf_new_from_file("tomxplayer.png", &gerr));
+	gtk_window_set_icon((GtkWindow *)window,gdk_pixbuf_new_from_file(ICON_PATH, &gerr));
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);

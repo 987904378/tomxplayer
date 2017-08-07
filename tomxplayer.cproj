@@ -58,7 +58,6 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="setting_list_view.h" />
-    <None Include="tomxplayerg" />
     <None Include="op_dbus.h" />
     <None Include="media_playlist.h" />
     <None Include="version.h" />
@@ -70,6 +69,9 @@
     <None Include="osd_rpi\Vera.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="DEBIAN\control" />
+    <None Include="tomxplayer" />
+    <None Include="build_deb.sh" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="list.c" />
@@ -87,5 +89,10 @@
     <Compile Include="osd_rpi\graphics.c" />
     <Compile Include="osd_rpi\text_render.c" />
     <Compile Include="osd_rpi\vgft.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="DEBIAN\tomxplayer-gtk.desktop">
+      <DeployService-TargetDirectoryId>Linux.DesktopApplications</DeployService-TargetDirectoryId>
+    </Content>
   </ItemGroup>
 </Project>

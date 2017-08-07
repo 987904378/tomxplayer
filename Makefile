@@ -13,7 +13,7 @@ ifeq ($(ARCH),armv7l)
 		osd_rpi/vgft.c
 else
 	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-	NOTES += "Building for x86_64 is for development and testing purposes only.\n"
+	NOTES += "Building for $(ARCH) is for development and testing purposes only.\n"
 	NOTES += "Afaik, omxplayer only runs on the Raspberry Pi. Therefore\n"
 	NOTES += "tomxplayer is only useful on the Raspberry Pi - armv7l.\n"
 	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
@@ -40,13 +40,26 @@ SRC += \
 
 debug:
 	@echo $(NOTES)
-	@echo building debug
-	gcc $(CFLAGS) -DDEBUG $(DEFS) $(SRC) -o tomxplayer $(LDFLAGS)
-	@echo build debug complete.
+	@echo Building Debug...
+	@echo
+	gcc $(CFLAGS) -DDEBUG $(DEFS) $(SRC) -o tomxplayer.bin $(LDFLAGS)
+	@echo
+	@echo Build Debug Complete.
+	@echo
+	@echo './tomxplayer' to run...
 
 release:
 	@echo $(NOTES)
-	@echo building release
-	gcc $(CFLAGS) $(SRC) -o tomxplayer $(LDFLAGS)
-	@echo build release complete.
+	@echo Building Release...
+	@echo
+	gcc $(CFLAGS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(LDFLAGS)
+	@echo
+	@echo Build Release Complete.
+	@echo Building Debian Package...
+	@echo
+	@./build_deb.sh
+	@echo
+	@echo "Building Package Complete."
+	@echo "Package is in ./out"
+	@echo "Release builds will not run from the current directory."
 
