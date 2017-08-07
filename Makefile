@@ -241,7 +241,7 @@ mate-release:
 	@./build_deb.sh mate
 	@echo
 	@echo "Building Package Complete."
-	@echo "Package is in ./out"
+	@echo "Package is in ./out/mate"
 	@echo "Release builds will not run from the current directory."
 
 raspi-release:
@@ -257,6 +257,6 @@ raspi-release:
 	@./build_deb.sh raspi
 	@echo
 	@echo "Building Package Complete."
-	@echo "Package is in ./out"
+	@echo "Package is in ./out/raspi"
 	@echo "Release builds *might* not run from the current directory."
 

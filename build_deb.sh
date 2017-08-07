@@ -38,7 +38,7 @@ add_sizeof_file tomxplayer.bin
 cat DEBIAN/control | sed "s/%version%/$VERSION-$CONF/g" | sed "s/%size%/$SIZE/g" | sed "s/%deps%/$DEPS/g" > $INT_DIR/DEBIAN/control
 
 remove_old_builds() {
-	cd $HOME_PATH/out
+	cd $HOME_PATH/out/$CONF
 	rm *.deb
 }
 
@@ -48,8 +48,8 @@ create_deb() {
 
 	cd $HOME_PATH
 
-	mkdir -p out/
-	mv -v /tmp/tomxplayer_$VERSION.deb out/tomxplayer_$VERSION.deb
+	mkdir -p out/$CONF
+	mv -v /tmp/tomxplayer_$VERSION.deb out/$CONF/tomxplayer_$VERSION.deb
 
 }
 
