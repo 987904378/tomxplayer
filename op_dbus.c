@@ -226,6 +226,19 @@ void op_dbus_send_setposition(long long microsec_position) {
 	list_free(&args);
 }
 
+void op_dbus_send_setalpha(long long alpha) {
+	char *value1 = "/not/used";
+	int type1 = DBUS_TYPE_OBJECT_PATH;
+	int type2 = DBUS_TYPE_INT64;
+	list_t args = list_create("args",4, 1);
+	list_add_entry(&args, &type1);
+	list_add_entry(&args, &value1);
+	list_add_entry(&args, &type2);
+	list_add_entry(&args, &alpha);
+	send_message(MPRIS_NAME, "SetAlpha", &args, NULL);
+	list_free(&args);
+}
+
 long long op_dbus_send_duration() {
 	long long ret = 0;
 	char *value1 = MPRIS_NAME;

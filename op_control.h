@@ -32,6 +32,7 @@ void opc_toggle_playpause();
 void opc_stop_omxplayer();
 int opc_set_volume(double vol);
 void opc_set_aspect(char *aspect);
+void opc_set_alpha(int alpha);
 int opc_is_running();
 
 #endif

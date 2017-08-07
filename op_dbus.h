@@ -26,6 +26,7 @@ void op_dbus_send_unhidevideo();
 void op_dbus_send_setaspectmode(char *aspect);
 void op_dbus_send_setvideopos(int pos[]);
 void op_dbus_send_setposition(long long microsec_position);
+void op_dbus_send_setalpha(long long alpha);
 long long op_dbus_send_duration();
 long long op_dbus_send_position();
 int op_dbus_send_volume(double vol);

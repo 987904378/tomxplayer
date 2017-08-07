@@ -97,7 +97,6 @@ setting_t file_types = {
 };
 
 #ifndef x86
-
 setting_t osd_enable = {
 	"osd_enable",
 	"On-Screen Display",
@@ -142,5 +141,35 @@ setting_t osd_textsize_percent = {
 	NULL,
 	"",
 };
-
 #endif
+
+setting_t win_trans_unfocus = {
+	"win_trans_unfocus",
+	"Unfocused Transparency",
+	"Window",
+	"",
+	"",
+	0,
+	1,0,1,
+	SETTINGS_TYPE_BOOL,
+	1,
+	"When another window has input focus, Make the render window semi-transparent"
+	"This allows menus to and windows to be seen underneath.",
+	NULL,
+	"",
+};
+
+setting_t win_trans_alpha = {
+	"win_trans_alpha",
+	"Transparency Value",
+	"Window",
+	"",
+	"",
+	0,
+	123,10,245,
+	SETTINGS_TYPE_INT,
+	1,
+	"Scale of 10 to 245, 10 being almost completely transparent, and 245 being slightly transparent.",
+	NULL,
+	"",
+};

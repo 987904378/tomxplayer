@@ -34,5 +34,7 @@ setting_t osd_enable;
 setting_t osd_textsize;
 setting_t osd_textsize_percent;
 #endif
+setting_t win_trans_unfocus;
+setting_t win_trans_alpha;
 
 #endif

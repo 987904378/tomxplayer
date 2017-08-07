@@ -111,6 +111,11 @@ void opc_set_aspect(char * aspect) {
 	op_dbus_send_setaspectmode(aspect);
 }
 
+void opc_set_alpha(int alpha) {
+if(!is_running) return;
+	op_dbus_send_setalpha((long long) alpha);
+}
+
 int opc_is_running() {
 	return is_running;
 }

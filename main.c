@@ -65,6 +65,7 @@ static gboolean _fullscreen = FALSE;
 static gboolean _paused = FALSE;
 static gboolean _minimized = FALSE;
 static gboolean _should_uslider = TRUE;
+static gboolean _focused = TRUE;
 
 static void play_path();
 
@@ -88,6 +89,7 @@ static list_t playback_settings;
 #ifndef x86
 static list_t osd_settings;
 #endif
+static list_t win_settings;
 
 static media_playlist_t *_playlist;
 
@@ -124,6 +126,20 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 		opc_unhidevideo();
 	}
 
+	return FALSE;
+}
+
+gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+	_focused = FALSE;
+	if(win_trans_unfocus.int_value)
+		opc_set_alpha(win_trans_alpha.int_value);
+	return FALSE;
+}
+
+gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
+	_focused = TRUE;
+	if(win_trans_unfocus.int_value)
+		opc_set_alpha(255);
 	return FALSE;
 }
 
@@ -382,6 +398,7 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 #ifndef x86
 	gtk_preference_dialog_add(pd, &osd_settings);
 #endif
+	gtk_preference_dialog_add(pd, &win_settings);
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
@@ -619,6 +636,13 @@ static void osd_textsize_updated(void *setting) {
 	LOGD(TAG, "%s", "osd_text_size updated");
 }
 #endif
+
+static void win_trans_setting_updated(void *setting) {
+	if(win_trans_unfocus.int_value && !_focused && !_minimized)
+		opc_set_alpha(win_trans_alpha.int_value);
+	else
+		opc_set_alpha(255);
+}
 static void init_settings() {
 	settings_init();
 	settings_read(&cont_pb);
@@ -634,6 +658,10 @@ static void init_settings() {
 	osd_textsize_percent.setting_update_cb = &osd_textsize_updated;
 	settings_read(&osd_textsize_percent);
 #endif
+	win_trans_unfocus.setting_update_cb = & win_trans_setting_updated;
+	settings_read(&win_trans_unfocus);
+	win_trans_alpha.setting_update_cb = & win_trans_setting_updated;
+	settings_read(&win_trans_alpha);
 	audio_settings = list_create("Audio",2,1);
 	list_add_entry(&audio_settings,&volume);
 	list_add_entry(&audio_settings, &audio_out);
@@ -647,6 +675,9 @@ static void init_settings() {
 	list_add_entry(&osd_settings, &osd_textsize);
 	list_add_entry(&osd_settings, &osd_textsize_percent);
 #endif
+	win_settings = list_create("Window",2,1);
+	list_add_entry(&win_settings, &win_trans_unfocus);
+	list_add_entry(&win_settings, &win_trans_alpha);
 
 }
 
@@ -679,6 +710,8 @@ int main (int argc, char * argv[]) {
 	g_signal_connect((GtkObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
 	g_signal_connect((GtkObject *)window, "key-press-event", G_CALLBACK(window_key_press_event),NULL);
 	g_signal_connect((GtkObject *)window, "key-release-event", G_CALLBACK(window_key_release_event),NULL);
+	g_signal_connect((GtkObject *)window, "focus-in-event", G_CALLBACK(window_focus_in_event),NULL);
+	g_signal_connect((GtkObject *)window, "focus-out-event", G_CALLBACK(window_focus_out_event),NULL);
 	gtk_window_set_default_size((GtkWindow *)window, 640, 360);
 	//gtk_container_set_resize_mode((GtkContainer *)window,GTK_RESIZE_IMMEDIATE);
 	GtkWidget *vbox = gtk_vbox_new(0, 0); 
