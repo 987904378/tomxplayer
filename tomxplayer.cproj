@@ -93,6 +93,7 @@
     </None>
     <None Include="build_deb.sh" />
     <None Include="gtk3_compat.h" />
+    <None Include="url_dialog.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="list.c" />
@@ -110,6 +111,7 @@
     <Compile Include="osd_rpi\graphics.c" />
     <Compile Include="osd_rpi\text_render.c" />
     <Compile Include="osd_rpi\vgft.c" />
+    <Compile Include="url_dialog.c" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="DEBIAN\tomxplayer-gtk.desktop">

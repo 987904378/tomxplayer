@@ -36,6 +36,7 @@
 #include <libgen.h>
 #include <sys/types.h>
 #include <signal.h>
+#include "url_dialog.h"
 
 #ifdef GTK3
 #include "gtk3_compat.h"
@@ -419,7 +420,7 @@ static void *pb_pos_poll(void * arg) {
 }
 
 static int set_video_path(char *path) {
-	int is_http = !strncmp(path,"http://",7);
+	int is_http = !strncmp(path,"http://",7) || !strncmp(path,"https://",8);
 	FILE * fd = fopen(path,"r");
 	if(fd == NULL && !is_http) {
 		int err = errno;
@@ -512,6 +513,24 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
 	opc_unhidevideo();
+}
+
+static void url_clicked( GtkWidget *widget, gpointer data ) {
+	opc_hidevideo();
+#ifndef NO_OSD
+	tr_stop();
+#endif
+	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
+	if (gtk_dialog_run (GTK_DIALOG (ud->window)) == GTK_RESPONSE_ACCEPT) {
+		gtk_widget_destroy((GtkWidget *)ud->window);
+		if(ud->url != NULL) {
+			set_video_path(ud->url);
+			play_path();
+		}
+	} else {
+		gtk_widget_destroy((GtkWidget *)ud->window);
+		opc_unhidevideo();
+	}
 }
 
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
@@ -735,21 +754,29 @@ static void build_top_toolbar(GtkBox *vbox) {
 	top_controls = gtk_hbox_new(0, 6);
 	top_toolbar = gtk_toolbar_new();
 	gtk_toolbar_set_show_arrow((GtkToolbar *)top_toolbar,FALSE);
+
 	GtkToolItem *file_open = gtk_tool_button_new_from_stock("gtk-open");
 	g_signal_connect((GObject *)file_open,"clicked",G_CALLBACK(file_open_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,file_open, 0);
+#ifdef GTK3
+	GtkToolItem *url_open = gtk_tool_button_new_from_stock("applications-internet");
+#else
+	GtkToolItem *url_open = gtk_tool_button_new_from_stock("gtk-save-as");
+#endif
+	g_signal_connect((GObject *)url_open,"clicked",G_CALLBACK(url_clicked),NULL);
+	gtk_toolbar_insert((GtkToolbar *)top_toolbar,url_open, 1);
 
 	GtkToolItem *fullscreen = gtk_toggle_tool_button_new_from_stock("gtk-fullscreen");
 	g_signal_connect((GObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)top_toolbar,fullscreen, 1);
+	gtk_toolbar_insert((GtkToolbar *)top_toolbar,fullscreen, 2);
 
 	GtkToolItem *preferences = gtk_tool_button_new_from_stock("gtk-properties");
 	g_signal_connect((GObject *)preferences,"clicked",G_CALLBACK(preferences_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)top_toolbar, preferences, 2);
+	gtk_toolbar_insert((GtkToolbar *)top_toolbar, preferences, 3);
 
 	GtkToolItem *about = gtk_tool_button_new_from_stock("gtk-about");
 	g_signal_connect((GObject *)about,"clicked",G_CALLBACK(about_clicked),NULL);
-	gtk_toolbar_insert((GtkToolbar *)top_toolbar, about, 3);
+	gtk_toolbar_insert((GtkToolbar *)top_toolbar, about, 4);
 
 	gtk_box_pack_start((GtkBox *)top_controls, top_toolbar, FALSE, FALSE, 0);
 	gtk_box_pack_start((GtkBox *)vbox, top_controls, FALSE, FALSE, 0);
