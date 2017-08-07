@@ -292,39 +292,37 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
 	if(!_fullscreen) {
 		gtk_window_fullscreen((GtkWindow *)window);
-		GdkColor black;
-		black.red = 0;
-		black.green = 0;
-		black.blue = 0;
-		GdkColor white;
-		white.red = 65535;
-		white.green = 65535;
-		white.blue = 65535;
-		form_orig =  gtk_widget_get_style(window);
-		label_orig = gtk_widget_get_style(time_label);
-		toolbar_orig = gtk_widget_get_style(top_toolbar);
-		if(form_fs == NULL) {
-			gtk_widget_modify_bg(window, GTK_STATE_NORMAL, &black);
-			gtk_widget_modify_bg(top_toolbar, GTK_STATE_NORMAL, &black);
-			gtk_widget_modify_bg(pb_controls, GTK_STATE_NORMAL, &black);
-			gtk_widget_modify_bg(vol_controls, GTK_STATE_NORMAL, &black);
-			gtk_widget_modify_fg(time_label, GTK_STATE_NORMAL, &white);
-			gtk_widget_modify_fg(volume_label, GTK_STATE_NORMAL, &white);
-		} else {
-			gtk_widget_set_style(window, form_fs);
-			gtk_widget_set_style(top_toolbar, toolbar_fs);
-			gtk_widget_set_style(pb_controls, toolbar_fs);
-			gtk_widget_set_style(vol_controls, toolbar_fs);
-			gtk_widget_set_style(time_label, label_fs);
-			gtk_widget_set_style(volume_label, label_fs);
+
+		if(form_orig != NULL) {
+			g_object_unref(form_orig);
+			g_object_unref(form_fs);
+			g_object_unref(label_orig);
+			g_object_unref(label_fs);
+			g_object_unref(toolbar_orig);
+			g_object_unref(toolbar_fs);
 		}
+
+		form_orig = gtk_style_copy(gtk_widget_get_style(window));
+		label_orig = gtk_style_copy(gtk_widget_get_style(time_label));
+		toolbar_orig = gtk_style_copy(gtk_widget_get_style(top_toolbar));
+
+		form_fs = gtk_style_copy(form_orig);
+		form_fs->bg[0] = form_fs->black;
+		label_fs = gtk_style_copy(label_orig);
+		label_fs->fg[0] = label_fs->white;
+		toolbar_fs = gtk_style_copy(toolbar_orig);
+		toolbar_fs->bg[0] = toolbar_fs->black;
+
+		gtk_widget_set_style(window, form_fs);
+		gtk_widget_set_style(top_toolbar, toolbar_fs);
+		gtk_widget_set_style(pb_controls, toolbar_fs);
+		gtk_widget_set_style(vol_controls, toolbar_fs);
+		gtk_widget_set_style(time_label, label_fs);
+		gtk_widget_set_style(volume_label, label_fs);
 		hide_controls();
 		_fullscreen = TRUE;
 	} else {
 		_fullscreen = FALSE;  
-		form_fs =  gtk_widget_get_style(window);
-		label_fs = gtk_widget_get_style(time_label);
-		toolbar_fs = gtk_widget_get_style(top_toolbar);
 		gtk_window_unfullscreen((GtkWindow *)window);
 		gtk_widget_set_style(window, form_orig);
 		gtk_widget_set_style(top_toolbar, toolbar_orig);
