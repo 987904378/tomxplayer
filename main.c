@@ -35,6 +35,8 @@
 #include "time_utils.h"
 #include "osd_rpi/text_render.h"
 #include <libgen.h>
+#include <sys/types.h>
+#include <signal.h>
 
 #ifdef GTK3
 #include "gtk3_compat.h"
@@ -810,6 +812,12 @@ static void arb_offset_updated(void *setting) {
 	calc_render_pos();
 }
 
+static void signal_handler(int sig) {
+	LOGE(TAG, "Recieved signal %d stopping omxplayer",sig);
+	opc_stop_omxplayer();
+	exit(127);
+}
+
 static void init_settings() {
 	settings_init();
 	settings_read(&cont_pb);
@@ -864,6 +872,10 @@ static void init_settings() {
 //}
 
 int main (int argc, char * argv[]) {
+	signal(SIGSEGV, &signal_handler);
+	signal(SIGQUIT, &signal_handler);
+	signal(SIGILL, &signal_handler);
+	signal(SIGABRT, &signal_handler);
 	int opt;
 	while ((opt = getopt(argc, argv, "v")) != -1) {
 		switch (opt) {
