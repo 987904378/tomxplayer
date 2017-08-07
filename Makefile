@@ -5,6 +5,8 @@ ARCH :=$(shell arch)
 #
 GTK_VERSION := 3
 
+#OPT_ROOT := /home/meticulus/raspbian_stretch_opt
+
 OSD_CFLAGS := \
 	-DSTANDALONE \
 	-D__STDC_CONSTANT_MACROS \
@@ -27,18 +29,20 @@ OSD_CFLAGS := \
 	-DUSE_EXTERNAL_LIBBCM_HOST \
 	-DUSE_VCHIQ_ARM \
 	-Wno-psabi \
-	-I/opt/vc/include/interface/vcos/pthreads \
-	-I/opt/vc/include/interface/vmcs_host/linux \
-	-I/opt/vc/include \
-	-I/opt/vc/include/EGL
+	-I$(OPT_ROOT)/opt/vc/include/interface/vcos/pthreads \
+	-I$(OPT_ROOT)/opt/vc/include/interface/vmcs_host/linux \
+	-I$(OPT_ROOT)/opt/vc/include \
+	-I$(OPT_ROOT)/opt/vc/include/EGL
 
 OSD_LDPATHS := \
-	-L/opt/vc/lib
+	-L$(OPT_ROOT)/opt/vc/lib
 
 OSD_LDFLAGS := \
 	-lbrcmGLESv2 \
 	-lbrcmEGL \
 	-lGLESv2 \
+	-lGLESv2_static \
+	-lkhrn_static \
 	-lopenmaxil \
 	-lbcm_host \
 	-lvcos \
