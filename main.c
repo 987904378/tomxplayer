@@ -379,7 +379,7 @@ static void pause_clicked( GtkWidget *widget, gpointer data ) {
 static void * restore_volume(void * arg) {
 	pthread_detach(pthread_self());
 	while(do_volume(volume.int_value))
-		usleep(100 * 1000);
+		usleep(20 * 1000);
 	return NULL;
 }
 
