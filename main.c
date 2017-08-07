@@ -33,6 +33,8 @@
 #include <signal.h>
 #include "version.h"
 #include "time_utils.h"
+#include "osd_rpi/text_render.h"
+#include <libgen.h>
 
 #define TAG "main"
 
@@ -55,6 +57,9 @@ static int da_h = 0;
 
 static int pos[4];
 static gboolean _fullscreen = FALSE;
+static gboolean _paused = FALSE;
+static gboolean _minimized = FALSE;
+static gboolean _should_uslider = TRUE;
 
 static void play_path();
 
@@ -64,6 +69,7 @@ static int pb_pos_poll_running = 0;
 
 static pthread_t fs_hide_controls_thread;
 static pthread_t restore_volume_thread;
+static pthread_t set_pb_position_thread;
 
 static GtkStyle *form_orig;
 static GtkStyle *label_orig;
@@ -90,17 +96,52 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 	pb_pos_poll_cancel = 1;
 	pthread_cancel(pb_pos_poll_thread);
 	pthread_join(pb_pos_poll_thread, NULL);
+#ifndef x86
+	tr_stop();
+	tr_deinit();
+#endif
 	opc_stop_omxplayer();
 	gtk_main_quit ();
 }
 
 static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *event, gpointer user_data) {
 	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
+		_minimized = TRUE;
 		opc_hidevideo();
+		tr_stop();
 	} else { 
+		_minimized = FALSE;
 		opc_unhidevideo();
 	}
+
 	return FALSE;
+}
+
+static void update_pb_position_ui(long long pb_pos, long long pb_dur) {
+	char dur[255];
+	char pos[255];
+	char timestamp[255];
+	gtk_range_set_range((GtkRange *)hscale, 0, (gdouble)pb_dur);
+	gtk_range_set_value((GtkRange *)hscale, (gdouble)pb_pos);
+	if(!ms_to_time(pb_dur,dur) && !ms_to_time(pb_pos,pos)) {
+		sprintf(timestamp,"%s / %s",pos,dur);
+		gtk_label_set_text((GtkLabel *)time_label,timestamp);
+	}
+}
+
+static void * timed_set_pb_position(void *arg) {
+    int c = 0;
+	pthread_detach(pthread_self());
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
+	while(c < 499) {
+		usleep(1000);
+		c++;
+	}
+	unsigned long pb_pos = (unsigned long)arg;
+	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+	opc_set_pb_position(pb_pos);
+	_should_uslider = TRUE;
+	return NULL;
 }
 
 static void * timed_hide_controls(void * arg) {
@@ -117,6 +158,7 @@ static void * timed_hide_controls(void * arg) {
 		hide_controls();
 		gdk_threads_leave();
 	}
+	return NULL;
 }
 
 static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *event, gpointer user_data) {
@@ -129,14 +171,41 @@ static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *ev
 }
 
 static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data) {
-	opc_set_pb_position((unsigned long)value);
+	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
+	long long newval = (long long)adj->value;
+	_should_uslider = FALSE;
+	pthread_cancel(set_pb_position_thread);
+	pthread_create(&set_pb_position_thread, NULL, &timed_set_pb_position, (long long *)newval);
+	update_pb_position_ui((long long)newval, (long long)adj->upper);
+#ifndef x86
+	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
 	return FALSE;
 }
 
 static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
-	unsigned long newpos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
-	newpos += 10 * 1000 * 1000;
-	opc_set_pb_position(newpos);
+	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
+	_should_uslider = FALSE;
+	adj->value += 10 * 1000 * 1000;
+	opc_set_pb_position(adj->value);
+	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
+#ifndef x86
+	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
+	_should_uslider = TRUE;
+	return FALSE;
+}
+
+static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
+	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
+	_should_uslider = FALSE;
+	adj->value -= 10 * 1000 * 1000;
+	opc_set_pb_position(adj->value);
+	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
+#ifndef x86
+	tr_show_thread(((GtkLabel *)time_label)->label);
+#endif
+	_should_uslider = TRUE;
 	return FALSE;
 }
 
@@ -144,8 +213,6 @@ static int do_volume(int vol) {
 	int ret = 0;
 	double dvol = (double)vol / 100;
 	ret = opc_set_volume(dvol);
-	if(!ret)
-		settings_save(&volume);
 	return ret;
 }
 
@@ -153,6 +220,13 @@ static gboolean vol_up_clicked( GtkWidget *widget, gpointer data ) {
 	volume.int_value += 5;
 	volume.int_value = volume.int_value > volume.max ? volume.max : volume.int_value;
 	do_volume(volume.int_value);
+	settings_save(&volume);
+#ifndef x86
+	char osd_text[255];
+	sprintf(osd_text, "VOL: %d",volume.int_value);
+	if(!_minimized)
+		tr_show_thread(osd_text);
+#endif
 	return FALSE;
 }
 
@@ -160,13 +234,13 @@ static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
 	volume.int_value -= 5;
 	volume.int_value = volume.int_value < volume.min ? volume.min : volume.int_value;
 	do_volume(volume.int_value);
-	return FALSE;
-}
-
-static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
-	unsigned long newpos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
-	newpos -= 10 * 1000 * 1000;
-	opc_set_pb_position(newpos);
+	settings_save(&volume);
+#ifndef x86
+	char osd_text[255];
+	sprintf(osd_text, "VOL: %d",volume.int_value);
+	if(!_minimized)
+		tr_show_thread(osd_text);
+#endif
 	return FALSE;
 }
 
@@ -175,10 +249,18 @@ static void calc_render_pos() {
 	pos[1] = window_y + da_y;
 	pos[2] = pos[0] + da_w;
 	pos[3] = pos[1] + da_h;
+	tr_set_xy((unsigned int)pos[0] + 10,(unsigned int)pos[3] -10);
+	tr_set_max_width((unsigned int)da_w - 20);
+	tr_set_text_size((unsigned int)(da_h / 20));
 	opc_update_pos(pos); 
 }
 
 static void pause_clicked( GtkWidget *widget, gpointer data ) {
+	_paused = _paused ? FALSE : TRUE;
+#ifndef x86
+	if(!_minimized)
+		tr_show_thread(_paused ? "Paused" : "Playing");
+#endif
 	opc_toggle_playpause();
 }
 
@@ -186,13 +268,11 @@ static void * restore_volume(void * arg) {
 	pthread_detach(pthread_self());
 	while(do_volume(volume.int_value))
 		usleep(100 * 1000);
+	return NULL;
 }
 
 static void *pb_pos_poll(void * arg) {
-	char dur[255];
-	char pos[255];
 	long long pb_pos[2];
-	char timestamp[255];
 	pthread_detach(pthread_self());
 	pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	pb_pos_poll_running = 1; 
@@ -202,20 +282,16 @@ static void *pb_pos_poll(void * arg) {
 			mp_move_next(_playlist);
 			play_path();
 		}
-		if(opc_status(pb_pos))
-			continue;
 		if(pb_pos_poll_cancel)
 			break;
+		if(opc_status(pb_pos) || !_should_uslider || !opc_is_running())
+			continue;
 		gdk_threads_enter();
-		gtk_range_set_range((GtkRange *)hscale, 0, (gdouble)pb_pos[0]);
-		gtk_range_set_value((GtkRange *)hscale, (gdouble)pb_pos[1]);
-		if(!ms_to_time(pb_pos[0],dur) && !ms_to_time(pb_pos[1],pos)) {
-			sprintf(timestamp,"%s / %s",pos,dur);
-			gtk_label_set_text((GtkLabel *)time_label,timestamp);
-		}
+		update_pb_position_ui(pb_pos[1], pb_pos[0]);
 		gdk_threads_leave();
 	}
 	pb_pos_poll_running = 0;
+	return NULL;
 }
 
 static int set_video_path(char *path) {
@@ -247,6 +323,10 @@ static void play_path() {
 	mp_get_current(_playlist, vpath);
 	sprintf(title, "%s - %s","tomxplayer", vpath);
 	gtk_window_set_title((GtkWindow *)window, title);
+#ifndef x86
+	if(!_minimized)
+		tr_show_thread(basename(vpath));
+#endif
 	opc_start_omxplayer_thread(pos, vpath);
 	if(!pb_pos_poll_running) {
 		pthread_create(&pb_pos_poll_thread,NULL, &pb_pos_poll,NULL); 
@@ -278,6 +358,9 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	opc_hidevideo();
+#ifndef x86
+	tr_stop();
+#endif
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
@@ -539,6 +622,9 @@ int main (int argc, char * argv[]) {
 	gtk_init(&argc ,&argv);
 	gdk_threads_init();
 	init_settings();
+#ifndef x86
+	tr_init();
+#endif
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title((GtkWindow *)window,"tomxplayer"); 
 	gtk_window_set_icon((GtkWindow *)window,gdk_pixbuf_new_from_file("tomxplayer.png", &gerr));
