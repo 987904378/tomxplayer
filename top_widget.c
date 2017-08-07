@@ -109,14 +109,13 @@ static void *pb_pos_poll(void * arg) {
 
 static void * timed_set_pb_position(void *arg) {
     int c = 0;
-	pthread_detach(pthread_self());
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE,NULL);
 	while(c < 499) {
 		usleep(1000);
 		c++;
 	}
-	top_widget_t *topw = (top_widget_t *)arg;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
+	top_widget_t *topw = (top_widget_t *)arg;
 	op_widget_set_pb_position(&topw->pb_pos);
 	topw->should_uslider = TRUE;
 	return NULL;
@@ -139,6 +138,7 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 	topw->should_uslider = FALSE;
 	topw->pb_pos = newval;
 	pthread_cancel(topw->set_pb_position_thread);
+	pthread_join(topw->set_pb_position_thread, NULL);
 	pthread_create(&topw->set_pb_position_thread, NULL, &timed_set_pb_position, topw);
 #ifdef GTK3
 	topw->pb_dur = (int64_t)gtk_adjustment_get_upper(adj);
