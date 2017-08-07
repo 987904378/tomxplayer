@@ -57,6 +57,7 @@ static void *start_omxplayer_system(void *arg) {
 	pos[2] + arb_x_offset.int_value,
 	pos[3] + arb_y_offset.int_value,
 	file_name);
+	LOGD(TAG, "starting omxplayer: %s",cmd);
 	system(cmd);
 	is_running = 0;
 	return NULL;

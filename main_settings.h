@@ -37,6 +37,10 @@ setting_t osd_textsize_percent;
 setting_t win_trans_unfocus;
 setting_t win_trans_alpha;
 setting_t omx_extra_args;
+#ifdef POLLWINPOS
+setting_t border_offset;
+setting_t title_bar_offset;
+#endif
 setting_t arb_x_offset;
 setting_t arb_y_offset;
 

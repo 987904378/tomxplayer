@@ -150,7 +150,7 @@ setting_t win_trans_unfocus = {
 	"",
 	"",
 	0,
-	1,0,1,
+	0,0,1,
 	SETTINGS_TYPE_BOOL,
 	1,
 	"When another window has input focus, Make the render window semi-transparent. "
@@ -189,6 +189,40 @@ setting_t omx_extra_args = {
 	"",
 };
 
+#ifdef POLLWINPOS
+
+setting_t border_offset = {
+	"border_offset",
+	"Window Border Offset",
+	"Advanced",
+	"",
+	"",
+	0,
+	2, 0, 65535,
+	SETTINGS_TYPE_INT,
+	1,
+	"A x and y offset applied when the window is not maximized and not fullscreen.",
+	NULL,
+	"",
+};
+
+setting_t title_bar_offset = {
+	"title_bar_offset",
+	"Title Bar Offset",
+	"Advanced",
+	"",
+	"",
+	0,
+	28,0 ,65535,
+	SETTINGS_TYPE_INT,
+	1,
+	"Offset for the title bar (window decorations). A render window y offset applied when not fullscreen. This may need to be changed if system fonts sizes change.",
+	NULL,
+	"",
+};
+
+#endif
+
 setting_t arb_x_offset = {
 	"arb_x_offset",
 	"Arbitrary x Offset",
@@ -199,8 +233,7 @@ setting_t arb_x_offset = {
 	0,-65535,65535,
 	SETTINGS_TYPE_INT,
 	1,
-	"If the render window does line up you can use this to line it up.\n"
-	"NOTE: Setting 'Unfocused Transparency' will help.",
+	"A render window alignment x offset ment to handle overscan 'black bars' at the left and right of the sreen.",
 	NULL,
 	"",
 };
@@ -215,8 +248,7 @@ setting_t arb_y_offset = {
 	0,-65535,65535,
 	SETTINGS_TYPE_INT,
 	1,
-	"If the render window does line up you can use this to line it up.\n"
-	"NOTE: Setting 'Unfocused Transparency' will help.",
+	"A render window alignment y offset ment to handle overscan 'black bars' at the top and bottom of the sreen.",
 	NULL,
 	"",
 };

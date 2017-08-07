@@ -1,11 +1,11 @@
 # Tactical OMXPlayer aka: tomxplayer
-C/GTK+ port of tomxplayer /  GUI Video player / Wrapper for omxplayer | For the Raspberry Pi.
+C/GTK+ port of tomxplayer / GUI Video player / Wrapper for omxplayer | For the Raspberry Pi.
 
 # Building
 tomxplayer is built and developed on the Raspberry Pi 3 Model B using Ubuntu Mate (16.04 LTS currently).
 There is currently, no method of cross compilation and building on architectures other than armhf is not supported.
-tomxplayer can be built for either GTK2 or GTK3 by changing the GTK_VERSION flag at the top of 'Makefile'. The
-flag is '3' (for GTK3) by default.
+The version for Raspbian (Stretch currently) is GTK2 and therefore requires the GTK2 development and runtime dependancies. Likewise,
+Ubuntu Mate is GTK3 and requires the GTK3 development and runtime dependancies.
 
 ## Development Dependancies
 * GTK3: libgtk3.0-dev (>=3.18)
@@ -14,6 +14,7 @@ flag is '3' (for GTK3) by default.
 * Raspberry Pi specific development files located:
 	* https://github.com/raspberrypi/firmware
 	* Specifically the files in /opt/vc
+	* In Raspbian Stretch and Ubuntu Mate 16.04 LTS, these files are already included.
 
 ## Runtime Dependancies
 * GTK3: libgtk3.0 (>=3.18)
@@ -22,13 +23,21 @@ flag is '3' (for GTK3) by default.
 * Raspberry Pi specific development files located:
 	* https://github.com/raspberrypi/firmware
 	* Specifically the files in /opt/vc
+	* In Raspbian Stretch and Ubuntu Mate 16.04 LTS, these files are already included.	
 
-## Instructions
+## Ubuntu Mate Instructions
 Debug build that runs from current directory.
-1. make debug
+1. make mate-debug
 
 Debian package
-1. make release
+1. make mate-release
+
+## Raspbian Instructions
+Debug build that runs from current directory.
+1. make raspi-debug
+
+Debian package
+1. make raspi-release
 
 
 ## NOTE: Because this is developed on the Raspberry Pi and the Rasbperry Pi does not come with a real-time clock, my commits may be oddly out of chronological order.

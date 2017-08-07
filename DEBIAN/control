@@ -1,5 +1,6 @@
 Package: tomxplayer
 Version: %version%
+Installed-Size: %size%
 Section: base
 Priority: optional
 Architecture: armhf

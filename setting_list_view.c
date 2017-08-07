@@ -143,8 +143,8 @@ static GtkWidget *gtk_int_setting_viewer_new(setting_t *setting) {
 	GtkWidget *vbox = gtk_vbox_new(FALSE, 0);
 	build_setting_viewer_header((GtkVBox *)vbox, setting);
 	GtkWidget *spinbutton = gtk_spin_button_new_with_range((gdouble)setting->min,(gdouble)setting->max, 1);
-	g_signal_connect((GObject *)spinbutton,"value-changed",G_CALLBACK(spinbutton_value_changed), setting);
 	gtk_spin_button_set_value((GtkSpinButton *)spinbutton, setting->int_value);
+	g_signal_connect((GObject *)spinbutton,"value-changed",G_CALLBACK(spinbutton_value_changed), setting);
 	gtk_box_pack_start((GtkBox *)vbox, spinbutton, FALSE, FALSE, MARGIN);
 	build_setting_viewer_footer((GtkVBox *)vbox, setting);
 	gtk_widget_show_all(vbox);

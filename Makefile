@@ -1,11 +1,11 @@
 
 ARCH :=$(shell arch)
-#
-# GTK_VERSION can be switched between  '2' and '3'
-#
-GTK_VERSION := 3
 
-#OPT_ROOT := /home/meticulus/raspbian_stretch_opt
+# I'm building for Raspbian Stretch on Ubuntu MATE 16.04 and
+# in order to get the correct linkage I copy the /opt
+# folder in Raspbian Stretch to the directory listed
+# below and uncomment this line.
+# OPT_ROOT := /home/$(USER)/raspbian_stretch_root
 
 OSD_CFLAGS := \
 	-DSTANDALONE \
@@ -140,17 +140,48 @@ GTK_COMMON_LDFLAGS := \
 	-lglib-2.0 \
 	-lgdk_pixbuf-2.0
 
-LDFLAGS := \
+GTK3_ALL_CFLAGS := \
+	$(DEFS) \
+	$(OSD_CFLAGS) \
+	$(GTK3_CFLAGS) \
+	$(GTK_COMMON_CFLAGS) \
+	$(COMMON_CFLAGS)
+
+GTK3_ALL_LDFLAGS := \
 	$(OSD_LDPATHS) \
 	$(COMMON_LDPATHS) \
+	$(OSD_LDFLAGS) \
+	$(GTK3_LDFLAGS) \
+	$(GTK_COMMON_LDFLAGS) \
+	$(COMMON_LDFLAGS)
 
-ifeq ($(GTK_VERSION), 3)
-	CFLAGS := $(OSD_CFLAGS) $(GTK3_CFLAGS) $(GTK_COMMON_CFLAGS) $(COMMON_CFLAGS)
-	LDFLAGS += $(OSD_LDFLAGS) $(GTK3_LDFLAGS) $(GTK_COMMON_LDFLAGS) $(COMMON_LDFLAGS)
-else
-	CFLAGS := $(OSD_CFLAGS) $(GTK2_CFLAGS) $(GTK_COMMON_CFLAGS) $(COMMON_CFLAGS)
-	LDFLAGS += $(OSD_LDFLAGS) $(GTK2_LDFLAGS) $(GTK_COMMON_LDFLAGS) $(COMMON_LDFLAGS)
-endif
+GTK2_ALL_CFLAGS := \
+	$(DEFS) \
+	$(OSD_CFLAGS) \
+	$(GTK2_CFLAGS) \
+	$(GTK_COMMON_CFLAGS) \
+	$(COMMON_CFLAGS)
+
+GTK2_ALL_LDFLAGS := \
+	$(OSD_LDPATHS) \
+	$(COMMON_LDPATHS) \
+	$(OSD_LDFLAGS) \
+	$(GTK2_LDFLAGS) \
+	$(GTK_COMMON_LDFLAGS) \
+	$(COMMON_LDFLAGS)
+
+RASPBIAN_CFLAGS := \
+	-DPOLLWINPOS \
+	$(GTK2_ALL_CFLAGS)
+
+RASPBIAN_LDFLAGS := \
+	$(GTK2_ALL_LDFLAGS)
+
+MATE_CFLAGS := \
+	-DUSE_SIGHANDLER \
+	$(GTK3_ALL_CFLAGS)
+
+MATE_LDFLAGS := $(GTK3_ALL_LDFLAGS)
 
 SRC += \
   main.c \
@@ -166,28 +197,64 @@ SRC += \
   main_settings.c \
   $(OSD_SRC)
 
-debug:
+all:
+	@echo '- Please specifiy a target(i.e make mate-debug). Possible targets include:'
+	@echo '- mate-debug'
+	@echo '- raspi-debug'
+	@echo '- mate-release'
+	@echo '- raspi-release'
+
+mate-debug:
+	@rm -rf tomxplayer.bin
 	@echo $(NOTES)
 	@echo Building Debug...
 	@echo
-	gcc $(CFLAGS) -DDEBUG $(DEFS) $(SRC) -o tomxplayer.bin $(LDFLAGS)
+	gcc $(MATE_CFLAGS) -DDEBUG $(SRC) -o tomxplayer.bin $(MATE_LDFLAGS)
 	@echo
 	@echo Build Debug Complete.
 	@echo
 	@echo './tomxplayer' to run...
 
-release:
+raspi-debug:
+	@rm -rf tomxplayer.bin
+	@echo $(NOTES)
+	@echo Building Debug...
+	@echo
+	gcc $(RASPBIAN_CFLAGS) -DDEBUG $(SRC) -o tomxplayer.bin $(RASPBIAN_LDFLAGS)
+	@echo
+	@echo Build Debug Complete.
+	@echo
+	@echo './tomxplayer' to run...
+
+mate-release:
+	@rm -rf tomxplayer.bin
 	@echo $(NOTES)
 	@echo Building Release...
 	@echo
-	gcc $(CFLAGS) $(DEFS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(LDFLAGS)
+	gcc $(MATE_CFLAGS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(MATE_LDFLAGS)
 	@echo
 	@echo Build Release Complete.
 	@echo Building Debian Package...
 	@echo
-	@./build_deb.sh
+	@./build_deb.sh mate
 	@echo
 	@echo "Building Package Complete."
 	@echo "Package is in ./out"
 	@echo "Release builds will not run from the current directory."
+
+raspi-release:
+	@rm -rf tomxplayer.bin
+	@echo $(NOTES)
+	@echo Building Release...
+	@echo
+	gcc $(RASPBIAN_CFLAGS) -DRESOURCE_DIR=\"/usr/share/tomxplayer\" $(SRC) -o tomxplayer.bin $(RASPBIAN_LDFLAGS)
+	@echo
+	@echo Build Release Complete.
+	@echo Building Debian Package...
+	@echo
+	@./build_deb.sh raspi
+	@echo
+	@echo "Building Package Complete."
+	@echo "Package is in ./out"
+	@echo "Release builds *might* not run from the current directory."
 

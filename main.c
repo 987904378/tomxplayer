@@ -74,6 +74,7 @@ static int pos[4];
 static gboolean _fullscreen = FALSE;
 static gboolean _paused = FALSE;
 static gboolean _minimized = FALSE;
+static gboolean _maximized = FALSE;
 static gboolean _should_uslider = TRUE;
 static gboolean _focused = TRUE;
 
@@ -147,21 +148,29 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 		_minimized = FALSE;
 		opc_unhidevideo();
 	}
-
+	_maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED);
 	return FALSE;
 }
 
 gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = FALSE;
-	if(win_trans_unfocus.int_value)
+	if(win_trans_unfocus.int_value && !_minimized) {
 		opc_set_alpha(win_trans_alpha.int_value);
+#ifdef GTK3
+		gtk_widget_set_opacity ((GtkWidget *)window, (double)win_trans_alpha.int_value / 255);
+#endif
+	}
 	return FALSE;
 }
 
 gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = TRUE;
-	if(win_trans_unfocus.int_value)
+	if(win_trans_unfocus.int_value) {
 		opc_set_alpha(255);
+#ifdef GTK3
+		gtk_widget_set_opacity((GtkWidget *)window, 1);
+#endif
+	}
 	return FALSE;
 }
 
@@ -336,6 +345,18 @@ static void calc_render_pos() {
 	pos[1] = window_y + da_y;
 	pos[2] = pos[0] + da_w;
 	pos[3] = pos[1] + da_h;
+#ifdef POLLWINPOS
+	if(!_fullscreen) {
+		if(!_maximized) {
+			pos[0] += border_offset.int_value;
+			pos[1] += border_offset.int_value;
+			pos[2] += border_offset.int_value;
+			pos[3] += border_offset.int_value;
+		}
+		pos[1] += title_bar_offset.int_value;
+		pos[3] += title_bar_offset.int_value;
+	}
+#endif
 #ifndef NO_OSD
 	tr_set_xy((unsigned int)pos[0] + 10,(unsigned int)pos[3] -10);
 	tr_set_max_width((unsigned int)da_w - 20);
@@ -443,7 +464,7 @@ static void play_path() {
 
 void *play_on_start(void *arg) {
 	while(da_w == 0)
-		usleep(200 * 1000);
+		usleep(500 * 1000);
 	play_path();
 	return NULL;
 }
@@ -603,16 +624,38 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	opc_unhidevideo();
 }
 
+#ifdef POLLWINPOS
+gboolean window_position_poll(gpointer arg) {
+	if(window) {
+		int x, y;
+		gtk_window_get_position ((GtkWindow *)window, &x, &y);
+		if(x != window_x || y != window_y) {
+			window_x = x;
+			window_y = y;
+			calc_render_pos();
+		}
+	}
+	return TRUE;
+}
+#endif
+
 static gboolean window_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
 	if(widget == drawing_area) {
 		da_x = event->x;
 		da_y = event->y;
 		da_w = event->width;
 		da_h = event->height;
+		LOGD(TAG, "%s", "drawing area size set");
 		calc_render_pos();
 	} else if (widget == window) {
 		window_x = event->x;
 		window_y = event->y;
+		LOGD(TAG, "%s", "window coords set");
+		gtk_widget_queue_resize ((GtkWidget *)drawing_area);
+#if GTK3
+		da_w = event->width < da_w ? event->width : da_w;
+		da_h = event->height < da_h ? event->height - (gtk_widget_get_allocated_height((GtkWidget *)pb_controls) * 2) : da_h;
+#endif
 		calc_render_pos();
 	} 
 	return FALSE;
@@ -691,7 +734,7 @@ static void build_drawing_area(GtkBox *vbox) {
 	black.blue = 0;
 	drawing_area = gtk_drawing_area_new();
 	gtk_widget_modify_bg(drawing_area,GTK_STATE_NORMAL, &black);
-	g_signal_connect((GObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);
+	g_signal_connect((GObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);	
 	gtk_box_pack_start((GtkBox *)vbox,drawing_area,TRUE,TRUE,0);
 }
 
@@ -798,21 +841,32 @@ static void osd_textsize_updated(void *setting) {
 #endif
 
 static void win_trans_setting_updated(void *setting) {
-	if(win_trans_unfocus.int_value && !_focused && !_minimized)
+	if(win_trans_unfocus.int_value && !_focused && !_minimized) {
 		opc_set_alpha(win_trans_alpha.int_value);
-	else
+#ifdef GTK3
+		if(window)
+			gtk_widget_set_opacity (window, (double)win_trans_alpha.int_value / 255);
+#endif
+	} else {
 		opc_hidevideo();
+#ifdef GTK3
+		if(window)
+			gtk_widget_set_opacity ((GtkWidget *)window, 1);
+#endif
+	}
 }
 
 static void arb_offset_updated(void *setting) {
 	calc_render_pos();
 }
 
+#ifdef USE_SIGHANDLER
 static void signal_handler(int sig) {
 	LOGE(TAG, "Recieved signal %d stopping omxplayer",sig);
 	opc_stop_omxplayer();
 	exit(127);
 }
+#endif
 
 static void init_settings() {
 	settings_init();
@@ -857,16 +911,24 @@ static void init_settings() {
 	list_add_entry(&win_settings, &win_trans_alpha);
 	advanced_settings = list_create("Advanced",3,1);
 	list_add_entry(&advanced_settings, &omx_extra_args);
+#ifdef POLLWINPOS
+	settings_read(&border_offset);
+	settings_read(&title_bar_offset);
+	list_add_entry(&advanced_settings, &border_offset);
+	list_add_entry(&advanced_settings, &title_bar_offset);
+#endif
 	list_add_entry(&advanced_settings, &arb_x_offset);
 	list_add_entry(&advanced_settings, &arb_y_offset);
 
 }
 
 int main (int argc, char * argv[]) {
+#ifdef USE_SIGHANDLER
 	signal(SIGSEGV, &signal_handler);
 	signal(SIGQUIT, &signal_handler);
 	signal(SIGILL, &signal_handler);
 	signal(SIGABRT, &signal_handler);
+#endif
 	int opt;
 	while ((opt = getopt(argc, argv, "v")) != -1) {
 		switch (opt) {
@@ -896,9 +958,14 @@ int main (int argc, char * argv[]) {
 	gtk_window_set_default_icon(icon);
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
+#ifndef POLLWINPOS
+	gtk_window_set_position ((GtkWindow *)window, GTK_WIN_POS_CENTER);
+#endif
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
 	g_signal_connect((GObject *)window, "destroy",G_CALLBACK(destroy), NULL);
+#ifndef POLLWINPOS
 	g_signal_connect((GObject *)window, "configure-event", G_CALLBACK(window_configure_event),NULL);
+#endif
 	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),NULL);
 	g_signal_connect((GObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
 	g_signal_connect((GObject *)window, "key-press-event", G_CALLBACK(window_key_press_event),NULL);
@@ -913,6 +980,9 @@ int main (int argc, char * argv[]) {
 	build_drawing_area((GtkBox *)vbox); 
 	build_bottom_toolbar((GtkBox *)vbox);
 	gtk_widget_show_all(window);
+#ifdef POLLWINPOS
+	gdk_threads_add_timeout(20, &window_position_poll, NULL);
+#endif
 	gtk_main();
 	opc_stop_omxplayer();
 	return 0;
