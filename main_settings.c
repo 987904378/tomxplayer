@@ -86,7 +86,7 @@ setting_t file_types = {
 	"Playlist File Types",
 	"Playback",
 	"",
-	"mp4 | avi | divx | mpeg | mkv | mpg |",
+	"mp4 | avi | divx | mpeg | mkv | mpg | 3g2 | 3gp | asf | flv | h264 | m2ts | m4v | mod | mov | tod | vob | webm | wmv",
 	0,
 	0,0,0,
 	SETTINGS_TYPE_STRING,
