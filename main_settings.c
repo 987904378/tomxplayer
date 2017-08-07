@@ -153,8 +153,8 @@ setting_t win_trans_unfocus = {
 	1,0,1,
 	SETTINGS_TYPE_BOOL,
 	1,
-	"When another window has input focus, Make the render window semi-transparent"
-	"This allows menus to and windows to be seen underneath.",
+	"When another window has input focus, Make the render window semi-transparent. "
+	"This allows menus and windows to be seen underneath.",
 	NULL,
 	"",
 };
@@ -170,6 +170,53 @@ setting_t win_trans_alpha = {
 	SETTINGS_TYPE_INT,
 	1,
 	"Scale of 10 to 245, 10 being almost completely transparent, and 245 being slightly transparent.",
+	NULL,
+	"",
+};
+
+setting_t omx_extra_args = {
+	"omx_extra_args",
+	"Exra Arguments for omxplayer",
+	"Advanced",
+	"",
+	"",
+	0,
+	0,0,0,
+	SETTINGS_TYPE_STRING,
+	1,
+	"Extra arguments to be passed to omxplayer. BE CAREFULL!. 'man omxplayer' for options.",
+	NULL,
+	"",
+};
+
+setting_t arb_x_offset = {
+	"arb_x_offset",
+	"Arbitrary x Offset",
+	"Advanced",
+	"",
+	"",
+	0,
+	0,-65535,65535,
+	SETTINGS_TYPE_INT,
+	1,
+	"If the render window does line up you can use this to line it up.\n"
+	"NOTE: Setting 'Unfocused Transparency' will help.",
+	NULL,
+	"",
+};
+
+setting_t arb_y_offset = {
+	"arb_y_offset",
+	"Arbitrary y Offset",
+	"Advanced",
+	"",
+	"",
+	0,
+	0,-65535,65535,
+	SETTINGS_TYPE_INT,
+	1,
+	"If the render window does line up you can use this to line it up.\n"
+	"NOTE: Setting 'Unfocused Transparency' will help.",
 	NULL,
 	"",
 };

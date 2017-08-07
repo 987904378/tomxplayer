@@ -90,6 +90,7 @@ static list_t playback_settings;
 static list_t osd_settings;
 #endif
 static list_t win_settings;
+static list_t advanced_settings;
 
 static media_playlist_t *_playlist;
 
@@ -399,6 +400,7 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	gtk_preference_dialog_add(pd, &osd_settings);
 #endif
 	gtk_preference_dialog_add(pd, &win_settings);
+	gtk_preference_dialog_add(pd, &advanced_settings);
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
@@ -643,6 +645,11 @@ static void win_trans_setting_updated(void *setting) {
 	else
 		opc_set_alpha(255);
 }
+
+static void arb_offset_updated(void *setting) {
+	calc_render_pos();
+}
+
 static void init_settings() {
 	settings_init();
 	settings_read(&cont_pb);
@@ -662,6 +669,12 @@ static void init_settings() {
 	settings_read(&win_trans_unfocus);
 	win_trans_alpha.setting_update_cb = & win_trans_setting_updated;
 	settings_read(&win_trans_alpha);
+	settings_read(&omx_extra_args);
+	arb_x_offset.setting_update_cb = & arb_offset_updated;
+	settings_read(&arb_x_offset);
+	arb_y_offset.setting_update_cb = & arb_offset_updated;
+	settings_read(&arb_y_offset);
+
 	audio_settings = list_create("Audio",2,1);
 	list_add_entry(&audio_settings,&volume);
 	list_add_entry(&audio_settings, &audio_out);
@@ -678,6 +691,10 @@ static void init_settings() {
 	win_settings = list_create("Window",2,1);
 	list_add_entry(&win_settings, &win_trans_unfocus);
 	list_add_entry(&win_settings, &win_trans_alpha);
+	advanced_settings = list_create("Advanced",3,1);
+	list_add_entry(&advanced_settings, &omx_extra_args);
+	list_add_entry(&advanced_settings, &arb_x_offset);
+	list_add_entry(&advanced_settings, &arb_y_offset);
 
 }
 

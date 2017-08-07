@@ -47,11 +47,16 @@ void opc_stop_omxplayer() {
 static void *start_omxplayer_system(void *arg) {
 	char cmd[255];
 	is_running = 1;
-	sprintf(cmd, "omxplayer --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1 > /dev/null",
+	sprintf(cmd, "omxplayer %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1 > /dev/null",
+	omx_extra_args.string_value,
 	getpid(),
 	audio_out.string_value,
 	stretch.int_value ? "stretch": "Letterbox", 
-	pos[0],pos[1],pos[2],pos[3], file_name);
+	pos[0] + arb_x_offset.int_value,
+	pos[1] + arb_y_offset.int_value,
+	pos[2] + arb_x_offset.int_value,
+	pos[3] + arb_y_offset.int_value,
+	file_name);
 	system(cmd);
 	is_running = 0;
 	return NULL;
@@ -71,6 +76,10 @@ void opc_start_omxplayer_thread(int tpos[], char * tfile_name) {
 
 void opc_update_pos(int tpos[]) {
 	if(!is_running)return;
+	tpos[0] += arb_x_offset.int_value;
+	tpos[1] += arb_y_offset.int_value;
+	tpos[2] += arb_x_offset.int_value;
+	tpos[3] += arb_y_offset.int_value;
 	op_dbus_send_setvideopos(tpos);
 }
 
