@@ -6,6 +6,6 @@ Priority: optional
 Architecture: armhf
 Depends: %deps%
 Maintainer: Jonathan Jason Dennis <theonejohnnyd@gmail.com>
-Description: tomxplayer
- tomxplayer is a gui video player for the Raspberry Pi and wrapper for omxplayer.
+Description: Tactical OMXPlayer (tomxplayer)
+ The Raspberry Pi Video Player
 
