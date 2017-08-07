@@ -45,9 +45,13 @@ void opc_stop_omxplayer() {
 }
 
 static void *start_omxplayer_system(void *arg) {
-	char cmd[255];
+	char cmd[1024];
 	is_running = 1;
-	sprintf(cmd, "omxplayer %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1 > /dev/null",
+	sprintf(cmd, "omxplayer %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
+#ifndef DEBUG
+	" > /dev/null"
+#endif
+	,
 	omx_extra_args.string_value,
 	getpid(),
 	audio_out.string_value,
@@ -57,6 +61,7 @@ static void *start_omxplayer_system(void *arg) {
 	pos[2] + arb_x_offset.int_value,
 	pos[3] + arb_y_offset.int_value,
 	file_name);
+	LOGD(TAG, "cmd length = %d / max = 1024", strlen(cmd));
 	LOGD(TAG, "starting omxplayer: %s",cmd);
 	system(cmd);
 	is_running = 0;
