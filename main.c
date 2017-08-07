@@ -234,6 +234,12 @@ static gboolean window_motion_notify_event(GtkWidget *widget, GdkEventMotion *ev
 static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdouble value, gpointer user_data) {
 	GtkAdjustment *adj = gtk_range_get_adjustment((GtkRange *)hscale);
 #ifdef GTK3
+	double upper = gtk_adjustment_get_upper(adj);
+	/* Work around for hscale issue which allows you to drag
+	 * slider to value greater than upper?
+	 */
+	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
+	value = value > upper ? upper : value;
 	long long newval = (long long)value;
 #else
 	long long newval = (long long)adj->value;
@@ -262,6 +268,12 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 #ifdef GTK3
 	long long value = (long long)gtk_adjustment_get_value (adj);
 	value += 10 * 1000 * 1000;
+	double upper = gtk_adjustment_get_upper(adj);
+	/* Work around for hscale issue which allows you to drag
+	 * slider to value greater than upper?
+	 */
+	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
+	value = value > upper ? upper : value;
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef NO_OSD
@@ -286,6 +298,8 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 #ifdef GTK3
 	long long value = (long long)gtk_adjustment_get_value (adj);
 	value -= 10 * 1000 * 1000;
+	double lower = gtk_adjustment_get_lower(adj);
+	value = value < lower ? lower : value;
 	opc_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef NO_OSD
