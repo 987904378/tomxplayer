@@ -1,0 +1,97 @@
+﻿//
+//  main_settings.c
+//
+//  Author:
+//       Jonathan Jason Dennis <theonejohnnyd@gmail.com>
+//
+//  Copyright (c) 2017 Meticulus Development
+//
+//  This program is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  This program is distributed in the hope that it will be useful,
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//  GNU General Public License for more details.
+//
+//  You should have received a copy of the GNU General Public License
+//  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#include "main_settings.h"
+
+setting_t cont_pb = {
+	"cont_pb",
+	"Continuous Playback",
+	"Playback",
+	"",
+	"",
+	0,
+	1, 0, 1,
+	SETTINGS_TYPE_BOOL,
+	1,
+	"Loads all video and audio from the folder and loops a playlist.",
+	NULL,
+	NULL,
+};
+
+setting_t stretch = {
+	"stretch",
+	"Stretch Video",
+	"Playback",
+	"",
+	"",
+	0,
+	0, 0, 1,
+	SETTINGS_TYPE_BOOL,
+	1,
+	"Stretch the video to fit the client window.",
+	NULL,
+	NULL,
+};
+
+setting_t volume = {
+	"volume",
+	"Volume",
+	"Audio",
+	"",
+	"",
+	0,
+	100, 0, 150,
+	SETTINGS_TYPE_INT,
+	0,
+	"Hidden Setting to persist volume.",
+	NULL,
+	NULL,
+};
+
+setting_t audio_out = {
+	"audio_out",
+	"Audio Output",
+	"Audio",
+	"",
+	"hdmi",
+	4,
+	0,0,0,
+	SETTINGS_TYPE_STRING,
+	1,
+	"Select the audio output device. This does not take effect until the next video is loaded.",
+	NULL,
+	"hdmi\0local\0both\0alsa:default",
+};
+
+setting_t file_types = {
+	"file_types",
+	"Playlist File Types",
+	"Playback",
+	"",
+	"mp4 | avi | divx | mpeg | mkv | mpg |",
+	0,
+	0,0,0,
+	SETTINGS_TYPE_STRING,
+	1,
+	"A separated list of file extentions to include in building a playlist from a directory.",
+	NULL,
+	"",
+};

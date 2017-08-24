@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{01EA9A2E-38CB-440A-A5C1-A48821E52BB8}</ProjectGuid>
+    <Compiler>
+      <Compiler ctype="GccCompiler" />
+    </Compiler>
+    <Language>C</Language>
+    <Target>Bin</Target>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug</OutputPath>
+    <OutputName>tomxplayer</OutputName>
+    <CompileTarget>Bin</CompileTarget>
+    <DefineSymbols>DEBUG</DefineSymbols>
+    <SourceDirectory>.</SourceDirectory>
+    <ExtraCompilerArguments>-I/usr/include/gtk-2.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include -I /usr/include/cairo -I/usr/include/pango-1.0 -I/usr/lib/arm-linux-gnueabihf/gtk-2.0/include -I/usr/lib/x86_64-linux-gnu/gtk-2.0/include -I/usr/include/gdk-pixbuf-2.0 -I/usr/include/atk-1.0 -I/usr/include/dbus-1.0 -I /usr/lib/arm-linux-gnueabihf/dbus-1.0/include -I /usr/lib/x86_64-linux-gnu/dbus-1.0/include</ExtraCompilerArguments>
+    <ExtraLinkerArguments>-L/usr/lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/arm-linux-gnueabihf -lgtk-x11-2.0 -lgdk-x11-2.0 -lXi -lgdk_pixbuf-2.0 -lm -lXft -lXrender -lXext -lX11 -lfreetype -lgobject-2.0 -lgmodule-2.0 -ldl -lglib-2.0 -lpthread -ldbus-1</ExtraLinkerArguments>
+    <Commandlineparameters>~/Video/video2.mp4</Commandlineparameters>
+    <Externalconsole>true</Externalconsole>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release</OutputPath>
+    <OutputName>tomxplayer</OutputName>
+    <CompileTarget>Bin</CompileTarget>
+    <OptimizationLevel>3</OptimizationLevel>
+    <SourceDirectory>.</SourceDirectory>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="dbuscontrol.sh">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="list.h" />
+    <None Include="log.h" />
+    <None Include="main_settings.h" />
+    <None Include="Makefile" />
+    <None Include="op_control.h" />
+    <None Include="preference_dialog.h" />
+    <None Include="settings.h" />
+    <None Include="setting_treeview.h" />
+    <None Include="tomxplayer.png" />
+    <None Include="setting_list_view.h" />
+    <None Include="tomxplayerg" />
+    <None Include="op_dbus.h" />
+    <None Include="media_playlist.h" />
+    <None Include="version.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="list.c" />
+    <Compile Include="main.c" />
+    <Compile Include="media_playlist.c" />
+    <Compile Include="op_control.c" />
+    <Compile Include="preference_dialog.c" />
+    <Compile Include="settings.c" />
+    <Compile Include="setting_treeview.c" />
+    <Compile Include="time_utils.c" />
+    <Compile Include="setting_list_view.c">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+    <Compile Include="main_settings.c" />
+    <Compile Include="op_dbus.c">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Compile>
+  </ItemGroup>
+</Project>
