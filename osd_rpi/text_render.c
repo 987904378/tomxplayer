@@ -40,6 +40,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "bcm_host.h"
 #include "vgfont.h"
 
+#include "../main_settings.h"
+
 static GRAPHICS_RESOURCE_HANDLE img;
 static uint32_t x,y = 0;
 static char text[255];
@@ -120,6 +122,8 @@ static void tr_set_text(char * t) {
 
 static void *tr_show(void * string_arg)
 {
+   if(!osd_enable.int_value)
+		return NULL;
    char * string = (char *)string_arg;
    uint32_t width, height;
    int LAYER=1;

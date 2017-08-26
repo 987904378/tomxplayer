@@ -80,6 +80,9 @@ static GtkStyle *toolbar_fs;
 
 static list_t audio_settings;
 static list_t playback_settings;
+#ifndef x86
+static list_t osd_settings;
+#endif
 
 static media_playlist_t *_playlist;
 
@@ -108,7 +111,9 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
 		_minimized = TRUE;
 		opc_hidevideo();
+#ifndef x86
 		tr_stop();
+#endif
 	} else { 
 		_minimized = FALSE;
 		opc_unhidevideo();
@@ -249,9 +254,14 @@ static void calc_render_pos() {
 	pos[1] = window_y + da_y;
 	pos[2] = pos[0] + da_w;
 	pos[3] = pos[1] + da_h;
+#ifndef x86
 	tr_set_xy((unsigned int)pos[0] + 10,(unsigned int)pos[3] -10);
 	tr_set_max_width((unsigned int)da_w - 20);
-	tr_set_text_size((unsigned int)(da_h / 20));
+	if(osd_textsize_percent.int_value) {
+		double percent = osd_textsize.int_value * 0.01;
+		tr_set_text_size((unsigned int)(da_h * percent));
+	}
+#endif
 	opc_update_pos(pos); 
 }
 
@@ -364,6 +374,9 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
+#ifndef x86
+	gtk_preference_dialog_add(pd, &osd_settings);
+#endif
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
@@ -591,7 +604,16 @@ static void stretch_updated(void *setting) {
 	opc_set_aspect(set->int_value ? "stretch":"Letterbox");
 	LOGD(TAG, "%s", "stretch updated");
 }
-
+#ifndef x86
+static void osd_textsize_updated(void *setting) {
+	if(osd_textsize_percent.int_value) {
+		double percent = osd_textsize.int_value * 0.01;
+		tr_set_text_size((unsigned int)(da_h * percent));
+	} else
+		tr_set_text_size((unsigned int)osd_textsize.int_value);
+	LOGD(TAG, "%s", "osd_text_size updated");
+}
+#endif
 static void init_settings() {
 	settings_init();
 	settings_read(&cont_pb);
@@ -600,6 +622,13 @@ static void init_settings() {
 	settings_read(&stretch);
 	settings_read(&audio_out);
 	settings_read(&file_types);
+#ifndef x86
+	settings_read(&osd_enable);
+	osd_textsize.setting_update_cb = &osd_textsize_updated;
+	settings_read(&osd_textsize);
+	osd_textsize_percent.setting_update_cb = &osd_textsize_updated;
+	settings_read(&osd_textsize_percent);
+#endif
 	audio_settings = list_create("Audio",2,1);
 	list_add_entry(&audio_settings,&volume);
 	list_add_entry(&audio_settings, &audio_out);
@@ -607,6 +636,13 @@ static void init_settings() {
 	list_add_entry(&playback_settings, &cont_pb);
 	list_add_entry(&playback_settings, &stretch);
 	list_add_entry(&playback_settings, &file_types);
+#ifndef x86
+	osd_settings = list_create("On-Screen Display", 2,1);
+	list_add_entry(&osd_settings, &osd_enable);
+	list_add_entry(&osd_settings, &osd_textsize);
+	list_add_entry(&osd_settings, &osd_textsize_percent);
+#endif
+
 }
 
 int main (int argc, char * argv[]) {

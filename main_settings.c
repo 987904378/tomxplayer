@@ -95,3 +95,52 @@ setting_t file_types = {
 	NULL,
 	"",
 };
+
+#ifndef x86
+
+setting_t osd_enable = {
+	"osd_enable",
+	"On-Screen Display",
+	"On-Screen Display",
+	"",
+	"",
+	0,
+	1,0,1,
+	SETTINGS_TYPE_BOOL,
+	1,
+	"Enable text to be displayed over the video when actions are performed.",
+	NULL,
+	"",
+};
+
+setting_t osd_textsize = {
+	"osd_txtsize",
+	"Text Size",
+	"On-Screen Display",
+	"",
+	"",
+	0,
+	5,5,40,
+	SETTINGS_TYPE_INT,
+	1,
+	"Size of the text to be displayed.",
+	NULL,
+	"",
+};
+
+setting_t osd_textsize_percent = {
+	"osd_txtsize_percent",
+	"Text Size As Percent",
+	"On-Screen Display",
+	"",
+	"",
+	0,
+	1,0,1,
+	SETTINGS_TYPE_BOOL,
+	1,
+	"Use 'Text Size' as a percentage of the render window height, dynamically sizing with it.",
+	NULL,
+	"",
+};
+
+#endif

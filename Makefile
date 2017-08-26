@@ -12,9 +12,12 @@ ifeq ($(ARCH),armv7l)
 		osd_rpi/text_render.c \
 		osd_rpi/vgft.c
 else
+	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
 	NOTES += "Building for x86_64 is for development and testing purposes only.\n"
 	NOTES += "Afaik, omxplayer only runs on the Raspberry Pi. Therefore\n"
-	NOTES += "tomxplayer is only useful on the Raspberry Pi armv7l.)\n"
+	NOTES += "tomxplayer is only useful on the Raspberry Pi - armv7l.\n"
+	NOTES += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+	DEFS += -Dx86
 	ARCH_LIB_PATH := x86_64-linux-gnu
 endif
 
@@ -38,12 +41,12 @@ SRC += \
 debug:
 	@echo $(NOTES)
 	@echo building debug
-	@gcc $(CFLAGS) -DDEBUG $(SRC) -o tomxplayer $(LDFLAGS)
-	@echo build complete.
+	gcc $(CFLAGS) -DDEBUG $(DEFS) $(SRC) -o tomxplayer $(LDFLAGS)
+	@echo build debug complete.
 
 release:
 	@echo $(NOTES)
 	@echo building release
-	@gcc $(CFLAGS) $(SRC) -o tomxplayer $(LDFLAGS)
-	@echo build complete.
+	gcc $(CFLAGS) $(SRC) -o tomxplayer $(LDFLAGS)
+	@echo build release complete.
 
