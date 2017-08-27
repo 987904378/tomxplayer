@@ -48,11 +48,11 @@ static void export_session () {
 	sprintf(file,"/tmp/omxplayerdbus.%s",getenv("USER"));
 	fd = open(file, O_RDONLY);
 	if (fd < 0) {
-		LOGE(TAG, "Could not open session file %s\n",file);
+		LOGE(TAG, "Could not open session file %s",file);
 		return;
 	}
 	if(!read(fd, address, 254)) {
-		LOGE(TAG, "Session file %s was empty?\n",file);
+		LOGE(TAG, "Session file %s was empty?",file);
 		close(fd);
 		return;
 	}
@@ -72,7 +72,7 @@ static int create_connection(DBusConnection **connection) {
 	dbus_error_init(&error);
 	*connection = dbus_bus_get(DBUS_BUS_SESSION, &error);
 	if(dbus_error_is_set (&error)) {
-		LOGE(TAG, "%s\n",error.message);
+		LOGE(TAG, "%s",error.message);
 		return 1;
 	}
 	return 0;
@@ -129,7 +129,7 @@ static int send_message(char* name, char * method, list_t *args, void *reply_val
     LOGD(TAG,"%s", "Message sent");
 #endif
 	if(dbus_error_is_set (&error)) {
-		LOGE(TAG, "%s\n", error.message);
+		LOGE(TAG, "%s", error.message);
 		goto end;
 	}
 	if(reply && reply_value) {
