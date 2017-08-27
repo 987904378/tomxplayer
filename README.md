@@ -17,3 +17,6 @@ Debug build that runs from current directory.
 
 Debian package
 1. make release
+
+
+## NOTE: Because this is developed on the Raspberry Pi and the Rasbperry Pi does not come with a real-time clock, my commits may be oddly out of chronological order.
