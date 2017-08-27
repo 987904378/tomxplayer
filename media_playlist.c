@@ -58,7 +58,7 @@ media_playlist_t *mp_create() {
 
 media_playlist_t *mp_create_dir_of_file(char * path) {
 	char full_path[255];
-	char *dir_path = dirname(path);
+	char *dir_path = dirname(strdup(path));
 	DIR *dir = opendir(dir_path);
 	if(dir == NULL) {
 		LOGE(TAG, "Could not open dir '%s':%s",dir_path, strerror(errno));
@@ -70,12 +70,14 @@ media_playlist_t *mp_create_dir_of_file(char * path) {
 	while((file = readdir(dir))) {
 		sprintf(full_path, "%s/%s",dir_path, file->d_name);
 		if(!is_media_by_ext(full_path)) {
+			if(!strcmp(path,full_path))
+				plist->index = plist->list.count;
 			list_add_entry(&plist->list, strdup(full_path));
-			if(strcmp(full_path,path) >= 0)
-				plist->index = plist->list.count -1;
 			LOGI(TAG,"Added %s to playlist.",full_path);
 		}
 	}
+	closedir(dir);
+	free(dir_path);
 	return plist;
 }
 
