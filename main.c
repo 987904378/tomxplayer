@@ -148,6 +148,7 @@ static void update_pb_position_ui(long long pb_pos, long long pb_dur) {
 	char dur[255];
 	char pos[255];
 	char timestamp[255];
+	if(pb_dur == 0) return;
 	gtk_range_set_range((GtkRange *)hscale, 0, (gdouble)pb_dur);
 	gtk_range_set_value((GtkRange *)hscale, (gdouble)pb_pos);
 	if(!ms_to_time(pb_dur,dur) && !ms_to_time(pb_pos,pos)) {
@@ -309,7 +310,7 @@ static void *pb_pos_poll(void * arg) {
 	pthread_setcancelstate(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	pb_pos_poll_running = 1; 
 	while(!pb_pos_poll_cancel) {
-		usleep(800 * 1000);
+		usleep(950 * 1000);
 		if(!opc_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
 			mp_move_next(_playlist);
 			play_path();
@@ -327,8 +328,9 @@ static void *pb_pos_poll(void * arg) {
 }
 
 static int set_video_path(char *path) {
+	int is_http = !strncmp(path,"http://",7);
 	FILE * fd = fopen(path,"r");
-	if(fd == NULL) {
+	if(fd == NULL && !is_http) {
 		int err = errno;
 		LOGE(TAG, "path '%s' - %s", path, strerror(err));
 		return err;
@@ -336,7 +338,7 @@ static int set_video_path(char *path) {
 	LOGD(TAG, "Video path set to %s",path);
 	if(_playlist != NULL)
 		mp_free(_playlist);
-	if(cont_pb.int_value)
+	if(cont_pb.int_value && !is_http)
 		_playlist = mp_create_dir_of_file(path);
 	else {
 		_playlist = mp_create();
@@ -355,16 +357,30 @@ static void play_path() {
 	mp_get_current(_playlist, vpath);
 	sprintf(title, "%s - %s","tomxplayer", vpath);
 	gtk_window_set_title((GtkWindow *)window, title);
-#ifndef x86
-	if(!_minimized)
-		tr_show_thread(basename(vpath));
-#endif
 	opc_start_omxplayer_thread(pos, vpath);
 	if(!pb_pos_poll_running) {
 		pthread_create(&pb_pos_poll_thread,NULL, &pb_pos_poll,NULL); 
 	}
 	sleep(1);
 	pthread_create(&restore_volume_thread,NULL, &restore_volume,NULL);
+#ifndef x86
+	if(!_minimized)
+		tr_show_thread(basename(vpath));
+#endif
+}
+
+void *play_on_start(void *arg) {
+	while(da_w == 0)
+		usleep(200 * 1000);
+	play_path();
+	return NULL;
+}
+
+static void window_realize(GtkWidget *widget, gpointer data) {
+	if(_playlist != NULL && _playlist->list.count > 0) {
+		pthread_t thread;
+		pthread_create(&thread, NULL, &play_on_start, NULL);
+	}
 }
 
 static void previous_clicked( GtkWidget *widget, gpointer data ) {
@@ -715,13 +731,15 @@ int main (int argc, char * argv[]) {
 #ifndef x86
 	tr_init();
 #endif
+	if(argc > 1)
+		set_video_path(argv[argc -1]);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title((GtkWindow *)window,"tomxplayer"); 
 	gtk_window_set_icon((GtkWindow *)window,gdk_pixbuf_new_from_file(ICON_PATH, &gerr));
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
-	g_signal_connect((GtkObject *)window,"destroy",G_CALLBACK(destroy), NULL);
+	g_signal_connect((GtkObject *)window, "destroy",G_CALLBACK(destroy), NULL);
 	g_signal_connect((GtkObject *)window, "configure-event", G_CALLBACK(window_configure_event),NULL);
 	g_signal_connect((GtkObject *)window, "window-state-event", G_CALLBACK(event_window_state),NULL);
 	g_signal_connect((GtkObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
@@ -729,6 +747,7 @@ int main (int argc, char * argv[]) {
 	g_signal_connect((GtkObject *)window, "key-release-event", G_CALLBACK(window_key_release_event),NULL);
 	g_signal_connect((GtkObject *)window, "focus-in-event", G_CALLBACK(window_focus_in_event),NULL);
 	g_signal_connect((GtkObject *)window, "focus-out-event", G_CALLBACK(window_focus_out_event),NULL);
+	g_signal_connect((GtkObject *)window, "realize", G_CALLBACK(window_realize),NULL);
 	gtk_window_set_default_size((GtkWindow *)window, 640, 360);
 	//gtk_container_set_resize_mode((GtkContainer *)window,GTK_RESIZE_IMMEDIATE);
 	GtkWidget *vbox = gtk_vbox_new(0, 0); 
@@ -737,11 +756,6 @@ int main (int argc, char * argv[]) {
 	build_drawing_area((GtkBox *)vbox); 
 	build_bottom_toolbar((GtkBox *)vbox);
 	gtk_widget_show_all(window);
-
-	if(argc > 1) {
-		if(!set_video_path(argv[argc -1]))
-			play_path();
-	}
 	gtk_main();
 	opc_stop_omxplayer();
 	return 0;
