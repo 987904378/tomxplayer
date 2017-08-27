@@ -6,14 +6,10 @@ tomxplayer is built and developed on the Raspberry Pi 3 Model B using Ubuntu Mat
 There is currently, no method of cross compilation and building on architectures other than armhf is not supported.
 
 ## Development Dependancies
-libgtk2.0-dev (>=2.24.30)
-libdbus-1-dev (>=1.10)
-(Afaik this is all)
+libgtk2.0-dev (>=2.0), libdbus-1-dev (>=1.10)
 
 ## Runtime Dependancies
-libgtk-2.0 (>=2.24.20)
-dbus (>=1.10)
-(Afaik this is all)
+libgtk2.0-0 (>= 2.0), dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)
 
 ## Instructions
 Debug build that runs from current directory.
