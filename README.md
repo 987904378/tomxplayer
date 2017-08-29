@@ -4,7 +4,7 @@ C/GTK+ port of tomxplayer /  GUI Video player / Wrapper for omxplayer | For the 
 # Building
 tomxplayer is built and developed on the Raspberry Pi 3 Model B using Ubuntu Mate (16.04 LTS currently).
 There is currently, no method of cross compilation and building on architectures other than armhf is not supported.
-tomxplayer can be built for either GTK2 or GTK3 by Changing th GTK_VERSION flag at the top of 'Makefile'. The
+tomxplayer can be built for either GTK2 or GTK3 by changing the GTK_VERSION flag at the top of 'Makefile'. The
 flag is '3' (for GTK3) by default.
 
 ## Development Dependancies
