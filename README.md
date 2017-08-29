@@ -8,20 +8,20 @@ tomxplayer can be built for either GTK2 or GTK3 by Changing th GTK_VERSION flag 
 flag is '3' (for GTK3) by default.
 
 ## Development Dependancies
-GTK3: libgtk3.0-dev (>=3.18)
-GTK2: libgtk2.0-dev (>=2.0)
-ALL: libdbus-1-dev (>=1.10)`
-EXTERNAL: Raspberry Pi specific development files located:
-	https://github.com/raspberrypi/firmware
-	Specifically the files in /opt/vc
+* GTK3: libgtk3.0-dev (>=3.18)
+* GTK2: libgtk2.0-dev (>=2.0)
+* libdbus-1-dev (>=1.10)`
+* Raspberry Pi specific development files located:
+	* https://github.com/raspberrypi/firmware
+	* Specifically the files in /opt/vc
 
 ## Runtime Dependancies
-GTK3: libgtk3.0 (>=3.18)
-GTK2: libgtk2.0-0 (>= 2.0)
-ALL: dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)
-EXTERNAL: Raspberry Pi specific development files located:
-	https://github.com/raspberrypi/firmware
-	Specifically the files in /opt/vc
+* GTK3: libgtk3.0 (>=3.18)
+* GTK2: libgtk2.0-0 (>= 2.0)
+* ALL: dbus (>=1.10), omxplayer(>=0.3.7~git20160923~dfea8c9)
+* Raspberry Pi specific development files located:
+	* https://github.com/raspberrypi/firmware
+	* Specifically the files in /opt/vc
 
 ## Instructions
 Debug build that runs from current directory.
