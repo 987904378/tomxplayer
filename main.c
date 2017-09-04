@@ -38,6 +38,7 @@
 #include <signal.h>
 #include "url_dialog.h"
 #include "ytdl_control.h"
+#include "op_widget.h"
 
 #ifdef GTK3
 #include "gtk3_compat.h"
@@ -55,7 +56,7 @@ GMainContext *context;
 #endif
 
 static GtkWidget * window;
-static GtkWidget *drawing_area;
+static op_widget_t *opw;
 static GtkWidget *hscale;
 static GtkWidget *time_label;
 static GtkWidget *volume_label;
@@ -64,18 +65,10 @@ static GtkWidget *pb_controls;
 static GtkWidget *vol_controls;
 static GtkWidget *top_controls;
 static GtkWidget *top_toolbar;
-static int window_x = 0;
-static int window_y = 0;
-static int da_x = 0;
-static int da_y = 0;
-static int da_w = 0;
-static int da_h = 0;
 
-static int pos[4];
 static gboolean _fullscreen = FALSE;
 static gboolean _paused = FALSE;
 static gboolean _minimized = FALSE;
-static gboolean _maximized = FALSE;
 static gboolean _should_uslider = TRUE;
 static gboolean _focused = TRUE;
 
@@ -133,29 +126,14 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 	tr_stop();
 	tr_deinit();
 #endif
-	opc_stop_omxplayer();
+	op_widget_stop_omxplayer();
 	gtk_main_quit ();
-}
-
-static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *event, gpointer user_data) {
-	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
-		_minimized = TRUE;
-		opc_hidevideo();
-#ifndef NO_OSD
-		tr_stop();
-#endif
-	} else { 
-		_minimized = FALSE;
-		opc_unhidevideo();
-	}
-	_maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED);
-	return FALSE;
 }
 
 gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = FALSE;
 	if(win_trans_unfocus.int_value && !_minimized) {
-		opc_set_alpha(win_trans_alpha.int_value);
+		op_widget_set_alpha(win_trans_alpha.int_value);
 #ifdef GTK3
 		gtk_widget_set_opacity ((GtkWidget *)window, (double)win_trans_alpha.int_value / 255);
 #endif
@@ -166,7 +144,7 @@ gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpoint
 gboolean window_focus_in_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = TRUE;
 	if(win_trans_unfocus.int_value) {
-		opc_set_alpha(255);
+		op_widget_set_alpha(255);
 #ifdef GTK3
 		gtk_widget_set_opacity((GtkWidget *)window, 1);
 #endif
@@ -197,7 +175,7 @@ static void * timed_set_pb_position(void *arg) {
 	}
 	unsigned long pb_pos = (unsigned long)arg;
 	pthread_setcancelstate(PTHREAD_CANCEL_DISABLE,NULL);
-	opc_set_pb_position(pb_pos);
+	op_widget_set_pb_position(pb_pos);
 	_should_uslider = TRUE;
 	return NULL;
 }
@@ -252,12 +230,12 @@ static gboolean hscale_change_value(GtkRange *range, GtkScrollType scroll, gdoub
 	update_pb_position_ui((long long)newval, (long long)gtk_adjustment_get_upper(adj));
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	tr_show_thread(time);
+	op_widget_osd_show(opw, time);
 #endif
 #else
 	update_pb_position_ui((long long)newval, (long long)adj->upper);
 #ifndef NO_OSD
-	tr_show_thread(((GtkLabel *)time_label)->label);
+	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
 #endif
 #endif
 	return FALSE;
@@ -275,18 +253,18 @@ static gboolean ff_clicked( GtkWidget *widget, gpointer data ) {
 	 */
 	upper -= (2000 * 1000); /* Can't seek to the very end without omxplayer error 256. */
 	value = value > upper ? upper : value;
-	opc_set_pb_position(value);
+	op_widget_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	tr_show_thread(time);
+	op_widget_osd_show(opw, time);
 #endif
 #else
 	adj->value += 10 * 1000 * 1000;
-	opc_set_pb_position(adj->value);
+	op_widget_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
 #ifndef NO_OSD
-	tr_show_thread(((GtkLabel *)time_label)->label);
+	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
 #endif
 #endif
 	_should_uslider = TRUE;
@@ -301,18 +279,18 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 	value -= 10 * 1000 * 1000;
 	double lower = gtk_adjustment_get_lower(adj);
 	value = value < lower ? lower : value;
-	opc_set_pb_position(value);
+	op_widget_set_pb_position(value);
 	update_pb_position_ui(value, (long long)gtk_adjustment_get_upper(adj));
 #ifndef NO_OSD
 	char *time = strdup(gtk_label_get_text((GtkLabel *)time_label));
-	tr_show_thread(time);
+	op_widget_osd_show(opw, time);
 #endif
 #else
 	adj->value -= 10 * 1000 * 1000;
-	opc_set_pb_position(adj->value);
+	op_widget_set_pb_position(adj->value);
 	update_pb_position_ui((long long)adj->value, (long long)adj->upper);
 #ifndef NO_OSD
-	tr_show_thread(((GtkLabel *)time_label)->label);
+	op_widget_osd_show(opw, ((GtkLabel *)time_label)->label);
 #endif
 #endif
 	_should_uslider = TRUE;
@@ -322,7 +300,7 @@ static gboolean rewind_clicked( GtkWidget *widget, gpointer data ) {
 static int do_volume(int vol) {
 	int ret = 0;
 	double dvol = (double)vol / 100;
-	ret = opc_set_volume(dvol);
+	ret = op_widget_set_volume(dvol);
 	return ret;
 }
 
@@ -334,8 +312,7 @@ static gboolean vol_up_clicked( GtkWidget *widget, gpointer data ) {
 #ifndef NO_OSD
 	char osd_text[255];
 	sprintf(osd_text, "VOL: %d",volume.int_value);
-	if(!_minimized)
-		tr_show_thread(osd_text);
+	op_widget_osd_show(opw, osd_text);
 #endif
 	return FALSE;
 }
@@ -348,47 +325,17 @@ static gboolean vol_down_clicked( GtkWidget *widget, gpointer data ) {
 #ifndef NO_OSD
 	char osd_text[255];
 	sprintf(osd_text, "VOL: %d",volume.int_value);
-	if(!_minimized)
-		tr_show_thread(osd_text);
+	op_widget_osd_show(opw, osd_text);
 #endif
 	return FALSE;
-}
-
-static void calc_render_pos() {
-	pos[0] = window_x + da_x;
-	pos[1] = window_y + da_y;
-	pos[2] = pos[0] + da_w;
-	pos[3] = pos[1] + da_h;
-#ifdef POLLWINPOS
-	if(!_fullscreen) {
-		if(!_maximized) {
-			pos[0] += border_offset.int_value;
-			pos[1] += border_offset.int_value;
-			pos[2] += border_offset.int_value;
-			pos[3] += border_offset.int_value;
-		}
-		pos[1] += title_bar_offset.int_value;
-		pos[3] += title_bar_offset.int_value;
-	}
-#endif
-#ifndef NO_OSD
-	tr_set_xy((unsigned int)pos[0] + 10,(unsigned int)pos[3] -10);
-	tr_set_max_width((unsigned int)da_w - 20);
-	if(osd_textsize_percent.int_value) {
-		double percent = osd_textsize.int_value * 0.01;
-		tr_set_text_size((unsigned int)(da_h * percent));
-	}
-#endif
-	opc_update_pos(pos); 
 }
 
 static void pause_clicked( GtkWidget *widget, gpointer data ) {
 	_paused = _paused ? FALSE : TRUE;
 #ifndef NO_OSD
-	if(!_minimized)
-		tr_show_thread(_paused ? "Paused" : "Playing");
+	op_widget_osd_show(opw, _paused ? "Paused" : "Playing");
 #endif
-	opc_toggle_playpause();
+	op_widget_toggle_playpause();
 }
 
 static void * restore_volume(void * arg) {
@@ -414,13 +361,13 @@ static void *pb_pos_poll(void * arg) {
 	pb_pos_poll_running = 1; 
 	while(!pb_pos_poll_cancel) {
 		usleep(950 * 1000);
-		if(!opc_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
+		if(!op_widget_is_running() && cont_pb.int_value && !pb_pos_poll_cancel) {
 			mp_move_next(_playlist);
 			play_path();
 		}
 		if(pb_pos_poll_cancel)
 			break;
-		if(opc_status(pb_pos) || !_should_uslider || !opc_is_running())
+		if(op_widget_status(pb_pos) || !_should_uslider || !op_widget_is_running())
 			continue;
 #ifdef GTK3
 		g_main_context_invoke(context, &update_pb_position_ui_gtk3, (void *)pb_pos);
@@ -464,20 +411,19 @@ static void play_path() {
 	mp_get_current(_playlist, vpath);
 	sprintf(title, "%s - %s","tomxplayer", vpath);
 	gtk_window_set_title((GtkWindow *)window, title);
-	opc_start_omxplayer_thread(pos, vpath);
+	op_widget_play(opw, vpath);
 	if(!pb_pos_poll_running) {
 		pthread_create(&pb_pos_poll_thread,NULL, &pb_pos_poll,NULL); 
 	}
 	sleep(1);
 	pthread_create(&restore_volume_thread,NULL, &restore_volume,NULL);
 #ifndef NO_OSD
-	if(!_minimized)
-		tr_show_thread(basename(vpath));
+	op_widget_osd_show(opw, basename(vpath));
 #endif
 }
 
 void *play_on_start(void *arg) {
-	while(da_w == 0)
+	while(!op_widget_is_ready(opw))
 		usleep(500 * 1000);
 	play_path();
 	return NULL;
@@ -494,13 +440,13 @@ static void previous_clicked( GtkWidget *widget, gpointer data ) {
 	if(cont_pb.int_value) {
 		unsigned long pos = (unsigned long) gtk_range_get_value((GtkRange *)hscale);
 		if(pos > (1000 * 5000))
-			opc_set_pb_position(0);
+			op_widget_set_pb_position(0);
 		else {
 			mp_move_previous(_playlist);
 			play_path();
 		}
 	} else {
-		opc_set_pb_position(0);
+		op_widget_set_pb_position(0);
 	}
 }
 
@@ -512,7 +458,7 @@ static void next_clicked( GtkWidget *widget, gpointer data ) {
 }
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
-	opc_hidevideo();
+	op_widget_hidevideo();
 #ifndef NO_OSD
 	tr_stop();
 #endif
@@ -527,14 +473,12 @@ static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	gtk_dialog_run((GtkDialog *) pd->window);
 	gtk_widget_destroy((GtkWidget *)pd->window);
 	gtk_preference_dialog_free(pd);
-	opc_unhidevideo();
+	op_widget_unhidevideo();
 }
 
 static void ytdl_out_cb(char *out_line) {
 #ifndef NO_OSD
-	if(!_minimized) {
-		tr_show_thread(out_line);
-	}
+	op_widget_osd_show(opw, out_line);
 #endif
 }
 
@@ -546,7 +490,7 @@ static void ytdl_url_cb(char *url) {
 }
 
 static void url_clicked( GtkWidget *widget, gpointer data ) {
-	opc_hidevideo();
+	op_widget_hidevideo();
 #ifndef NO_OSD
 	tr_stop();
 #endif
@@ -558,7 +502,7 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 			set_video_path(ud->url);
 			play_path();
 		} else
-			opc_unhidevideo();
+			op_widget_unhidevideo();
 	} else if (response == GTK_RESPONSE_APPLY) {
 	if(ud->url != NULL) {
 			gtk_widget_destroy((GtkWidget *)ud->window);
@@ -566,10 +510,10 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 			ytdl_register_url_cb(&ytdl_url_cb);
 			ytdl_cget_url_thread(ud->url);
 		} else
-			opc_unhidevideo();
+			op_widget_unhidevideo();
 	} else {
 		gtk_widget_destroy((GtkWidget *)ud->window);
-		opc_unhidevideo();
+		op_widget_unhidevideo();
 	}
 }
 
@@ -642,7 +586,7 @@ gboolean video_filter_cb(const GtkFileFilterInfo *filter_info, gpointer data) {
 
 static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 	GtkWidget *dialog;
-	opc_hidevideo();
+	op_widget_hidevideo();
 	dialog = gtk_file_chooser_dialog_new (
 			"Open File", 
 			(GtkWindow *)window,
@@ -677,44 +621,7 @@ static void file_open_clicked( GtkWidget *widget, gpointer data ) {
 		g_free (filename);
 	} else
 		gtk_widget_destroy (dialog);
-	opc_unhidevideo();
-}
-
-#ifdef POLLWINPOS
-gboolean window_position_poll(gpointer arg) {
-	if(window) {
-		int x, y;
-		gtk_window_get_position ((GtkWindow *)window, &x, &y);
-		if(x != window_x || y != window_y) {
-			window_x = x;
-			window_y = y;
-			calc_render_pos();
-		}
-	}
-	return TRUE;
-}
-#endif
-
-static gboolean window_configure_event(GtkWidget *widget, GdkEventConfigure *event, gpointer user_data) {
-	if(widget == drawing_area) {
-		da_x = event->x;
-		da_y = event->y;
-		da_w = event->width;
-		da_h = event->height;
-		LOGD(TAG, "%s", "drawing area size set");
-		calc_render_pos();
-	} else if (widget == window) {
-		window_x = event->x;
-		window_y = event->y;
-		LOGD(TAG, "%s", "window coords set");
-		gtk_widget_queue_resize ((GtkWidget *)drawing_area);
-#if GTK3
-		da_w = event->width < da_w ? event->width : da_w;
-		da_h = event->height < da_h ? event->height - (gtk_widget_get_allocated_height((GtkWidget *)pb_controls) * 2) : da_h;
-#endif
-		calc_render_pos();
-	} 
-	return FALSE;
+	op_widget_unhidevideo();
 }
 
 static gboolean window_key_press_event (GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
@@ -777,29 +684,21 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 
 	gtk_about_dialog_set_website(ad, "http://meticulus.co.vu");
 	gtk_about_dialog_set_authors(ad, authors);
-	opc_hidevideo();
+	op_widget_hidevideo();
 	gtk_dialog_run((GtkDialog *) ad);
 	gtk_widget_destroy((GtkWidget *)ad);
-	opc_unhidevideo();
+	op_widget_unhidevideo();
 }
 
 static void build_drawing_area(GtkBox *vbox) {
-	drawing_area = gtk_drawing_area_new();
 #ifdef GTK3
+	//TODO: MOVE ME!
 	GError *gerr = NULL;
 	fs_css_provider = gtk_css_provider_new();
 	gtk_css_provider_load_from_data (fs_css_provider, fs_css, strlen(fs_css), &gerr);
-	gtk_style_context_add_provider
-			(gtk_widget_get_style_context((GtkWidget *)drawing_area),(GtkStyleProvider *)fs_css_provider, GTK_STYLE_PROVIDER_PRIORITY_USER);
-#else
-	GdkColor black;
-	black.red = 0;
-	black.green = 0;
-	black.blue = 0;
-	gtk_widget_modify_bg(drawing_area,GTK_STATE_NORMAL, &black);
 #endif
-	g_signal_connect((GObject *)drawing_area, "configure-event", G_CALLBACK(window_configure_event),NULL);	
-	gtk_box_pack_start((GtkBox *)vbox,drawing_area,TRUE,TRUE,0);
+	opw = op_widget_new((GtkWindow *)window);
+	gtk_box_pack_start((GtkBox *)vbox,opw->drawing_area,TRUE,TRUE,0);
 }
 
 static void build_top_toolbar(GtkBox *vbox) {
@@ -898,29 +797,29 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 
 static void stretch_updated(void *setting) {
 	setting_t *set = (setting_t *)setting;
-	opc_set_aspect(set->int_value ? "stretch":"Letterbox");
+	op_widget_set_aspect(set->int_value ? "stretch":"Letterbox");
 	LOGD(TAG, "%s", "stretch updated");
 }
 #ifndef NO_OSD
 static void osd_textsize_updated(void *setting) {
 	if(osd_textsize_percent.int_value) {
 		double percent = osd_textsize.int_value * 0.01;
-		tr_set_text_size((unsigned int)(da_h * percent));
+		op_widget_osd_set_text_size_percent(opw, percent);
 	} else
-		tr_set_text_size((unsigned int)osd_textsize.int_value);
+		op_widget_osd_set_text_size(opw, (unsigned int)osd_textsize.int_value);
 	LOGD(TAG, "%s", "osd_text_size updated");
 }
 #endif
 
 static void win_trans_setting_updated(void *setting) {
 	if(win_trans_unfocus.int_value && !_focused && !_minimized) {
-		opc_set_alpha(win_trans_alpha.int_value);
+		op_widget_set_alpha(win_trans_alpha.int_value);
 #ifdef GTK3
 		if(window)
 			gtk_widget_set_opacity (window, (double)win_trans_alpha.int_value / 255);
 #endif
 	} else {
-		opc_hidevideo();
+		op_widget_hidevideo();
 #ifdef GTK3
 		if(window)
 			gtk_widget_set_opacity ((GtkWidget *)window, 1);
@@ -929,13 +828,13 @@ static void win_trans_setting_updated(void *setting) {
 }
 
 static void arb_offset_updated(void *setting) {
-	calc_render_pos();
+//	calc_render_pos();
 }
 
 #ifdef USE_SIGHANDLER
 static void signal_handler(int sig) {
 	LOGE(TAG, "Recieved signal %d stopping omxplayer",sig);
-	opc_stop_omxplayer();
+	op_widget_stop_omxplayer();
 	exit(127);
 }
 #endif
@@ -1018,9 +917,6 @@ int main (int argc, char * argv[]) {
 	gdk_threads_init();
 #endif
 	init_settings();
-#ifndef NO_OSD
-	tr_init();
-#endif
 	if(argc > 1)
 		set_video_path(argv[argc -1]);
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -1030,15 +926,8 @@ int main (int argc, char * argv[]) {
 	gtk_window_set_default_icon(icon);
 	gtk_window_stick((GtkWindow *)window);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
-#ifndef POLLWINPOS
-	gtk_window_set_position ((GtkWindow *)window, GTK_WIN_POS_CENTER);
-#endif
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
 	g_signal_connect((GObject *)window, "destroy",G_CALLBACK(destroy), NULL);
-#ifndef POLLWINPOS
-	g_signal_connect((GObject *)window, "configure-event", G_CALLBACK(window_configure_event),NULL);
-#endif
-	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),NULL);
 	g_signal_connect((GObject *)window, "motion-notify-event", G_CALLBACK(window_motion_notify_event),NULL);
 	g_signal_connect((GObject *)window, "key-press-event", G_CALLBACK(window_key_press_event),NULL);
 	g_signal_connect((GObject *)window, "key-release-event", G_CALLBACK(window_key_release_event),NULL);
@@ -1052,10 +941,7 @@ int main (int argc, char * argv[]) {
 	build_drawing_area((GtkBox *)vbox); 
 	build_bottom_toolbar((GtkBox *)vbox);
 	gtk_widget_show_all(window);
-#ifdef POLLWINPOS
-	gdk_threads_add_timeout(20, &window_position_poll, NULL);
-#endif
 	gtk_main();
-	opc_stop_omxplayer();
+	op_widget_stop_omxplayer();
 	return 0;
 }

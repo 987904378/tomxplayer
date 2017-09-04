@@ -94,6 +94,8 @@
     <None Include="build_deb.sh" />
     <None Include="gtk3_compat.h" />
     <None Include="url_dialog.h" />
+    <None Include="ytdl_control.h" />
+    <None Include="op_widget.h" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="list.c" />
@@ -112,6 +114,8 @@
     <Compile Include="osd_rpi\text_render.c" />
     <Compile Include="osd_rpi\vgft.c" />
     <Compile Include="url_dialog.c" />
+    <Compile Include="ytdl_control.c" />
+    <Compile Include="op_widget.c" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="DEBIAN\tomxplayer-gtk.desktop">
