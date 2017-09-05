@@ -362,10 +362,12 @@ void top_widget_volume_down(top_widget_t *topw) {
 
 void top_widget_hidecontrols(top_widget_t *topw) {
 	gtk_widget_hide(topw->bottom_controls);
+	gtk_widget_hide(topw->hscale);
 }
 
 void top_widget_showcontrols(top_widget_t *topw) {
 	gtk_widget_show(topw->bottom_controls);
+	gtk_widget_show(topw->hscale);
 }
 
 void top_widget_destroy(top_widget_t *topw) {
@@ -406,7 +408,7 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	g_signal_connect((GObject *)next,"clicked",G_CALLBACK(next_clicked), temp);
 	gtk_toolbar_insert((GtkToolbar *)temp->pb_controls,next, 4);
 
-	gtk_box_pack_start((GtkBox *)temp->bottom_controls, temp->pb_controls, FALSE, FALSE, 0);
+	gtk_box_pack_start((GtkBox *)temp->bottom_controls, temp->pb_controls, TRUE, TRUE, 0);
 
 	gtk_box_pack_start((GtkBox *)temp->bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
 
@@ -418,12 +420,11 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	temp->hscale = gtk_hscale_new_with_range(0,100,1);
 	gtk_scale_set_draw_value((GtkScale *)temp->hscale,FALSE);
 	g_signal_connect((GObject *)temp->hscale,"change-value",G_CALLBACK(hscale_change_value), temp);
-	gtk_box_pack_start((GtkBox *)temp->bottom_controls, temp->hscale, TRUE, TRUE, 0);
-
-	gtk_box_pack_start((GtkBox *)temp->bottom_controls, gtk_vseparator_new(), FALSE, FALSE, 0);
-
-	temp->volume_label = gtk_label_new("Volume:");
-	gtk_box_pack_start((GtkBox *)temp->bottom_controls, temp->volume_label, FALSE, FALSE, 0);
+#ifdef GTK3
+	gtk_widget_set_margin_end (temp->hscale, 10);
+	gtk_widget_set_margin_start (temp->hscale, 10);
+#endif
+	gtk_box_pack_start((GtkBox *)temp->widget, temp->hscale, FALSE, FALSE, 0);
 
 	temp->vol_controls = gtk_toolbar_new();
 
@@ -438,6 +439,9 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	gtk_toolbar_insert((GtkToolbar *)temp->vol_controls,vol_down, 1);
 
 	gtk_box_pack_end((GtkBox *)temp->bottom_controls,temp->vol_controls,FALSE,FALSE,0);
+
+	temp->volume_label = gtk_label_new("Volume:");
+	gtk_box_pack_end((GtkBox *)temp->bottom_controls, temp->volume_label, FALSE, FALSE, 0);
 
 	gtk_box_pack_end((GtkBox *)temp->widget, temp->bottom_controls, FALSE, FALSE, 0);
 
