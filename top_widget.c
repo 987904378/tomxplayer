@@ -319,6 +319,11 @@ void top_widget_play_path(top_widget_t *topw) {
 #endif
 }
 
+void top_widget_toggle_playpause(top_widget_t *topw) {
+	gtk_toggle_tool_button_set_active
+		((GtkToggleToolButton *)topw->pause, topw->paused ? FALSE : TRUE);
+}
+
 void top_widget_stop(top_widget_t *topw) {
 	op_widget_stop_omxplayer();
 	topw->pb_pos = 0;
@@ -332,27 +337,27 @@ void top_widget_stop(top_widget_t *topw) {
 }
 
 void top_widget_next(top_widget_t *topw) {
-	next_clicked(NULL , NULL);
+	next_clicked(NULL , topw);
 }
 
 void top_widget_previous(top_widget_t *topw) {
-	previous_clicked(NULL , NULL);
+	previous_clicked(NULL , topw);
 }
 
 void top_widget_seek_forward(top_widget_t *topw) {
-	ff_clicked(NULL , NULL);
+	ff_clicked(NULL , topw);
 }
 
 void top_widget_seek_back(top_widget_t *topw) {
-	rewind_clicked(NULL , NULL);
+	rewind_clicked(NULL , topw);
 }
 
 void top_widget_volume_up(top_widget_t *topw) {
-	vol_up_clicked(NULL , NULL);
+	vol_up_clicked(NULL , topw);
 }
 
 void top_widget_volume_down(top_widget_t *topw) {
-	vol_down_clicked(NULL , NULL);
+	vol_down_clicked(NULL , topw);
 }
 
 void top_widget_hidecontrols(top_widget_t *topw) {
@@ -389,9 +394,9 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	g_signal_connect((GObject *)rewind,"clicked",G_CALLBACK(rewind_clicked), temp);
 	gtk_toolbar_insert((GtkToolbar *)temp->pb_controls, rewind, 1);
 
-	GtkToolItem *pause = gtk_toggle_tool_button_new_from_stock("gtk-media-pause");
-	g_signal_connect((GObject *)pause,"clicked",G_CALLBACK(pause_clicked), temp);
-	gtk_toolbar_insert((GtkToolbar *)temp->pb_controls, pause, 2);
+	temp->pause = gtk_toggle_tool_button_new_from_stock("gtk-media-pause");
+	g_signal_connect((GObject *)temp->pause,"clicked",G_CALLBACK(pause_clicked), temp);
+	gtk_toolbar_insert((GtkToolbar *)temp->pb_controls, temp->pause, 2);
 
 	GtkToolItem *ff = gtk_tool_button_new_from_stock("gtk-media-forward");
 	g_signal_connect((GObject *)ff,"clicked",G_CALLBACK(ff_clicked), temp);

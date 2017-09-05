@@ -59,7 +59,7 @@ static GtkWidget * window;
 static top_widget_t *topw;
 static GtkWidget *top_controls;
 static GtkWidget *top_toolbar;
-
+static GtkToolItem *fullscreen;
 static gboolean _fullscreen = FALSE;
 static gboolean _minimized = FALSE;
 static gboolean _focused = TRUE;
@@ -311,23 +311,25 @@ static gboolean window_key_release_event (GtkWidget *widget, GdkEventKey *event,
 			top_widget_volume_down(topw);
 			break;
 		case 65361:
-			top_widget_seek_forward(topw);
+			top_widget_seek_back(topw);
 			break;
 		case 65363:
-			top_widget_seek_back(topw);
+			top_widget_seek_forward(topw);
 			break;
 		case 65366:
 			top_widget_next(topw);
 			break;
 		case 65365:
-			top_widget_next(topw);
+			top_widget_previous(topw);
 			break;
 		case 65307:
 			if(_fullscreen)
-				fullscreen_clicked(NULL,topw);
+				gtk_toggle_tool_button_set_active
+					((GtkToggleToolButton *)fullscreen, FALSE);
 			break;
 		case 65480:
-			fullscreen_clicked(NULL,topw);
+			gtk_toggle_tool_button_set_active
+				((GtkToggleToolButton *)fullscreen, _fullscreen ? FALSE : TRUE);
 			break;
 	}
 	return TRUE;
@@ -428,7 +430,7 @@ static void build_top_toolbar(GtkBox *vbox) {
 	g_signal_connect((GObject *)url_open,"clicked",G_CALLBACK(url_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,url_open, 1);
 
-	GtkToolItem *fullscreen = gtk_toggle_tool_button_new_from_stock("gtk-fullscreen");
+	fullscreen = gtk_toggle_tool_button_new_from_stock("gtk-fullscreen");
 	g_signal_connect((GObject *)fullscreen,"clicked",G_CALLBACK(fullscreen_clicked),NULL);
 	gtk_toolbar_insert((GtkToolbar *)top_toolbar,fullscreen, 2);
 

@@ -30,6 +30,7 @@ typedef struct {
 	op_widget_t *op_widget;
 	GtkWidget *bottom_controls;
 	GtkWidget *pb_controls;
+	GtkToolItem *pause;
 	GtkWidget *time_label;
 	GtkWidget *hscale;
 	GtkWidget *volume_label;
@@ -49,8 +50,6 @@ typedef struct {
 	pthread_t set_pb_position_thread;
 } top_widget_t;
 
-#define top_widget_toggle_playpause(x) \
-	op_widget_toggle_playpause(x->op_widget)
 #define top_widget_hidevideo(x) op_widget_hidevideo(x->op_widget)
 #define top_widget_unhidevideo(x) op_widget_unhidevideo(x->op_widget)
 #define top_widget_is_ready(x) op_widget_is_ready(x->op_widget)
@@ -74,5 +73,6 @@ void top_widget_seek_back(top_widget_t *topw);
 void top_widget_next(top_widget_t *topw);
 void top_widget_previous(top_widget_t *topw);
 void top_widget_stop(top_widget_t *topw);
+void top_widget_toggle_playpause(top_widget_t *topw);
 
 #endif
