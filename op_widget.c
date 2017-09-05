@@ -214,6 +214,10 @@ void op_widget_destroy(op_widget_t *opw) {
 #endif
 }
 
+static void arb_offset_updated(void *setting, void *user_data) {
+	calc_render_pos((op_widget_t *)user_data);
+}
+
 op_widget_t *op_widget_new(GtkWindow *window) {
 	op_widget_t *temp = malloc(sizeof(op_widget_t));
 	temp->drawing_area = gtk_drawing_area_new();
@@ -232,21 +236,22 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 	gtk_widget_modify_bg(temp->drawing_area,GTK_STATE_NORMAL, &black);
 	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 #endif
-#ifndef POLLWINPOS
-	gtk_window_set_position ((GtkWindow *)window, GTK_WIN_POS_CENTER);
-#endif
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
 	g_signal_connect((GObject *)temp->drawing_area, "configure-event", G_CALLBACK(window_configure_event),temp);
 #ifndef POLLWINPOS
 	g_signal_connect((GObject *)window, "configure-event", G_CALLBACK(window_configure_event),temp);
-#endif
-	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),temp);
-#ifdef POLLWINPOS
+	gtk_window_set_position ((GtkWindow *)window, GTK_WIN_POS_CENTER);
+#else
 	gdk_threads_add_timeout(20, &window_position_poll, temp);
 #endif
+	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),temp);
 #ifndef NO_OSD
 	tr_init();
 #endif
+	arb_x_offset.setting_update_cb = &arb_offset_updated;
+	arb_x_offset.setting_update_cb_user_data = temp;
+	arb_y_offset.setting_update_cb = &arb_offset_updated;
+	arb_y_offset.setting_update_cb_user_data = temp;
 	temp->window_y = 0;
 	temp->window_x = 0;
 	temp->window_w = 0;

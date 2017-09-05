@@ -34,6 +34,7 @@ setting_t cont_pb = {
 	"Loads all video and audio from the folder and loops a playlist.",
 	NULL,
 	NULL,
+	NULL,
 };
 
 setting_t stretch = {
@@ -47,6 +48,7 @@ setting_t stretch = {
 	SETTINGS_TYPE_BOOL,
 	1,
 	"Stretch the video to fit the client window.",
+	NULL,
 	NULL,
 	NULL,
 };
@@ -64,6 +66,7 @@ setting_t volume = {
 	"Hidden Setting to persist volume.",
 	NULL,
 	NULL,
+	NULL,
 };
 
 setting_t audio_out = {
@@ -77,6 +80,7 @@ setting_t audio_out = {
 	SETTINGS_TYPE_STRING,
 	1,
 	"Select the audio output device. This does not take effect until the next video is loaded.",
+	NULL,
 	NULL,
 	"hdmi\0local\0both\0alsa:default",
 };
@@ -92,6 +96,7 @@ setting_t file_types = {
 	SETTINGS_TYPE_STRING,
 	1,
 	"A separated list of file extentions to include in building a playlist from a directory. Do not include '.'!",
+	NULL,
 	NULL,
 	"",
 };
@@ -109,6 +114,7 @@ setting_t osd_enable = {
 	1,
 	"Enable text to be displayed over the video when actions are performed.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -124,6 +130,7 @@ setting_t osd_textsize = {
 	1,
 	"Size of the text to be displayed.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -138,6 +145,7 @@ setting_t osd_textsize_percent = {
 	SETTINGS_TYPE_BOOL,
 	1,
 	"Use 'Text Size' as a percentage of the render window height, dynamically sizing with it.",
+	NULL,
 	NULL,
 	"",
 };
@@ -156,6 +164,7 @@ setting_t win_trans_unfocus = {
 	"When another window has input focus, Make the render window semi-transparent. "
 	"This allows menus and windows to be seen underneath.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -171,6 +180,7 @@ setting_t win_trans_alpha = {
 	1,
 	"Scale of 10 to 245, 10 being almost completely transparent, and 245 being slightly transparent.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -185,6 +195,7 @@ setting_t omx_extra_args = {
 	SETTINGS_TYPE_STRING,
 	1,
 	"Extra arguments to be passed to omxplayer. BE CAREFULL!. 'man omxplayer' for options.",
+	NULL,
 	NULL,
 	"",
 };
@@ -203,6 +214,7 @@ setting_t border_offset = {
 	1,
 	"A x and y offset applied when the window is not maximized and not fullscreen.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -217,6 +229,7 @@ setting_t title_bar_offset = {
 	SETTINGS_TYPE_INT,
 	1,
 	"Offset for the title bar (window decorations). A render window y offset applied when not fullscreen. This may need to be changed if system fonts sizes change.",
+	NULL,
 	NULL,
 	"",
 };
@@ -235,6 +248,7 @@ setting_t arb_x_offset = {
 	1,
 	"A render window alignment x offset ment to handle overscan 'black bars' at the left and right of the sreen.",
 	NULL,
+	NULL,
 	"",
 };
 
@@ -249,6 +263,7 @@ setting_t arb_y_offset = {
 	SETTINGS_TYPE_INT,
 	1,
 	"A render window alignment y offset ment to handle overscan 'black bars' at the top and bottom of the sreen.",
+	NULL,
 	NULL,
 	"",
 };

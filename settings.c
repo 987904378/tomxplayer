@@ -67,7 +67,7 @@ void settings_save(setting_t *setting) {
 			LOGE(TAG,"%s",error->message);
 	} else {
 		LOGI(TAG,"%s", "Settings saved.");
-		if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting); }
+		if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting, setting->setting_update_cb_user_data); }
 	} 
 }
 
@@ -78,7 +78,7 @@ void settings_read(setting_t *setting) {
 		if(error == NULL) {
 			if(ret != setting->int_value){
 				setting->int_value = ret;
-				if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting); }
+				if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting, setting->setting_update_cb_user_data); }
 			}
 		}
 	} else {
@@ -86,7 +86,7 @@ void settings_read(setting_t *setting) {
 		if(error == NULL) {
 			if(strcmp(ret,setting->string_value)){
 				setting->string_value = ret;
-				if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting); }
+				if(setting->setting_update_cb != NULL) { setting->setting_update_cb(setting, setting->setting_update_cb_user_data); }
 			}
 		}
 	}

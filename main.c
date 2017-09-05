@@ -451,13 +451,13 @@ static void build_bottom_toolbar(GtkBox *vbox) {
 	gtk_box_pack_start(vbox, topw->widget, TRUE, TRUE, 0);
 }
 
-static void stretch_updated(void *setting) {
+static void stretch_updated(void *setting, void *user_data) {
 	setting_t *set = (setting_t *)setting;
 	op_widget_set_aspect(set->int_value ? "stretch":"Letterbox");
 	LOGD(TAG, "%s", "stretch updated");
 }
 #ifndef NO_OSD
-static void osd_textsize_updated(void *setting) {
+static void osd_textsize_updated(void *setting, void *user_data) {
 	if(osd_textsize_percent.int_value) {
 		double percent = osd_textsize.int_value * 0.01;
 		top_widget_osd_set_text_size_percent(topw, percent);
@@ -467,7 +467,7 @@ static void osd_textsize_updated(void *setting) {
 }
 #endif
 
-static void win_trans_setting_updated(void *setting) {
+static void win_trans_setting_updated(void *setting, void *user_data) {
 	if(win_trans_unfocus.int_value && !_focused && !_minimized) {
 		op_widget_set_alpha(win_trans_alpha.int_value);
 #ifdef GTK3
@@ -481,10 +481,6 @@ static void win_trans_setting_updated(void *setting) {
 			gtk_widget_set_opacity ((GtkWidget *)window, 1);
 #endif
 	}
-}
-
-static void arb_offset_updated(void *setting) {
-	gtk_widget_queue_resize ((GtkWidget *)topw->widget);
 }
 
 #ifdef USE_SIGHANDLER
@@ -515,9 +511,7 @@ static void init_settings() {
 	win_trans_alpha.setting_update_cb = & win_trans_setting_updated;
 	settings_read(&win_trans_alpha);
 	settings_read(&omx_extra_args);
-	arb_x_offset.setting_update_cb = & arb_offset_updated;
 	settings_read(&arb_x_offset);
-	arb_y_offset.setting_update_cb = & arb_offset_updated;
 	settings_read(&arb_y_offset);
 
 	audio_settings = list_create("Audio",2,1);

@@ -41,7 +41,8 @@ typedef struct {
 	int type;
 	int user_editable;
 	char *desc;
-	void (* setting_update_cb)(void *setting);
+	void (* setting_update_cb)(void *setting, void* user_data);
+	void *setting_update_cb_user_data;
 	char *option_array;
 } setting_t;
 
