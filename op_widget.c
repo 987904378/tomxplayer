@@ -242,8 +242,8 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 	black.green = 0;
 	black.blue = 0;
 	gtk_widget_modify_bg(temp->drawing_area,GTK_STATE_NORMAL, &black);
-	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 #endif
+	gtk_window_set_keep_above((GtkWindow *)window,TRUE);
 	gtk_widget_set_events((GtkWidget *)window, GDK_ALL_EVENTS_MASK);
 	g_signal_connect((GObject *)temp->drawing_area, "configure-event", G_CALLBACK(window_configure_event),temp);
 #ifndef POLLWINPOS
@@ -280,5 +280,8 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 	temp->is_running = 0;
 	temp->hidden = 0;
 	temp->thread = 0;
+
+	opc_init();
+
 	return temp;
 }

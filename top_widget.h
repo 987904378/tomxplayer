@@ -48,6 +48,7 @@ typedef struct {
 	int pb_pos_poll_running;
 	pthread_t restore_volume_thread;
 	pthread_t set_pb_position_thread;
+	int alpha;
 } top_widget_t;
 
 #define top_widget_hidevideo(x) op_widget_hidevideo(x->op_widget)
@@ -58,7 +59,6 @@ typedef struct {
 	op_widget_osd_set_text_size_percent(x->op_widget, y)
 #define top_widget_osd_set_text_size(x, y) \
 	op_widget_osd_set_text_size(x->op_widget, y)
-#define top_widget_set_alpha(x, y) op_widget_set_alpha(y)
 
 top_widget_t *top_widget_new(GtkWindow *window);
 int top_widget_set_video_path(top_widget_t *topw, char *path);
@@ -74,5 +74,6 @@ void top_widget_next(top_widget_t *topw);
 void top_widget_previous(top_widget_t *topw);
 void top_widget_stop(top_widget_t *topw);
 void top_widget_toggle_playpause(top_widget_t *topw);
+void top_widget_set_alpha(top_widget_t *topw, int alpha);
 
 #endif

@@ -269,7 +269,7 @@ long long op_dbus_send_position() {
 	list_add_entry(&args, &value2);
 	send_message(FDT_NAME, "Get", &args, &ret);
 	list_free(&args);
-	return ret;
+	return ret < 0 ? 0 : ret;
 }
 
 int op_dbus_send_volume(double vol) {

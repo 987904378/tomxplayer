@@ -51,17 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define TAG "text_render"
 
-//static GRAPHICS_RESOURCE_HANDLE img;
-//static uint32_t x,y = 0;
-//static char *text;
-//static int showing = 0;
-//static uint32_t alpha = 0xff;
-//static int dinit = 0;
 static int init = 0;
-//static sem_t sem;
-//static uint32_t max_width = 100;
-//static uint32_t text_size = 30;
-//static pthread_t thread;
 static int next_layer = 0;
 
 static int32_t render_subtitle(text_render_t *tr)
@@ -150,9 +140,7 @@ text_render_t *tr_new() {
 	temp->max_height = 100;
 	temp->text_size = 30;
 	temp->thread = 0;
-	temp->position = TR_POS_BOTTOM_LEFT;
-
-	graphics_display_resource(temp->img, 0, temp->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 1);
+	temp->position = TR_POS_BOTTOM_CENTER;
 
 	return temp;
 }

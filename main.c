@@ -461,13 +461,14 @@ static void osd_textsize_updated(void *setting, void *user_data) {
 #endif
 
 static void win_trans_setting_updated(void *setting, void *user_data) {
-	if(win_trans_unfocus.int_value && !_focused && !_minimized) {
-		op_widget_set_alpha(win_trans_alpha.int_value);
+	if(win_trans_unfocus.int_value && !_focused) {
+		top_widget_set_alpha(topw, win_trans_alpha.int_value);
 #ifdef GTK3
 		if(window)
 			gtk_widget_set_opacity (window, (double)win_trans_alpha.int_value / 255);
 #endif
 	} else {
+		top_widget_set_alpha(topw, 255);
 		top_widget_hidevideo(topw);
 #ifdef GTK3
 		if(window)

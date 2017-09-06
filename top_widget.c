@@ -44,14 +44,15 @@ static int do_volume(int vol) {
 static void * restore_volume(void * arg) {
 	int count = 0;
 	pthread_detach(pthread_self());
-	while(do_volume(volume.int_value) && count < 40) {
+	while(do_volume(volume.int_value) && count < 200) {
 		usleep(100 * 1000);
-		count += 1;
+		count ++;
 	}
 	top_widget_t *topw = (top_widget_t *)arg;
-	if(!topw->op_widget->minimized && count <= 40)
-		op_widget_unhidevideo();
-	else {
+	if(!topw->op_widget->minimized && count < 200) {
+		op_widget_unhidevideo(topw->op_widget);
+		op_widget_set_alpha(topw->alpha);
+	} else if(count >= 299) {
 		LOGE(TAG, "%s" ,"Could not restore volume? Did omxplayer actually start?");
 		top_widget_stop(topw);
 	}
@@ -62,7 +63,7 @@ static void update_pb_position_ui(top_widget_t *topw) {
 	char *dur;
 	char *pos;
 	char *timestamp;
-	if(topw->pb_dur <= 0) return;
+	topw->pb_dur = topw->pb_dur < 1 ? 1 : topw->pb_dur;
 	gtk_range_set_range((GtkRange *)topw->hscale, 0, (gdouble)topw->pb_dur);
 	gtk_range_set_value((GtkRange *)topw->hscale, (gdouble)topw->pb_pos);
 	if(!ms_to_time(topw->pb_dur, &dur) && !ms_to_time(topw->pb_pos, &pos)) {
@@ -299,6 +300,8 @@ static void playback_ended(int exit_code, void *user_data) {
 	if(cont_pb.int_value) {
 		mp_move_next(topw->playlist);
 		top_widget_play_path(topw);
+	} else {
+		top_widget_stop(topw);
 	}
 }
 
@@ -328,6 +331,10 @@ void top_widget_play_path(top_widget_t *topw) {
 		LOGE(TAG,"%s", "_playlist is NULL?");
 		return;
 	}
+	if(topw->paused) {
+		gtk_toggle_tool_button_set_active
+			((GtkToggleToolButton *)topw->pause, FALSE);
+	}
 	vpath = mp_get_current(topw->playlist);
 	op_widget_play(topw->op_widget, vpath);
 	if(!topw->pb_pos_poll_running) {
@@ -337,6 +344,7 @@ void top_widget_play_path(top_widget_t *topw) {
 #ifndef NO_OSD
 	top_widget_osd_show(topw, basename(vpath));
 #endif
+
 }
 
 void top_widget_toggle_playpause(top_widget_t *topw) {
@@ -398,6 +406,11 @@ void top_widget_destroy(top_widget_t *topw) {
 	free(topw);
 }
 
+void top_widget_set_alpha(top_widget_t *topw, int alpha) {
+	topw->alpha = alpha;
+	op_widget_set_alpha(alpha);
+}
+
 top_widget_t *top_widget_new(GtkWindow *window) {
 	top_widget_t *temp = malloc(sizeof(top_widget_t));
 	temp->widget = gtk_vbox_new(FALSE, 0);
@@ -443,6 +456,8 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 #ifdef GTK3
 	gtk_widget_set_margin_end (temp->hscale, 10);
 	gtk_widget_set_margin_start (temp->hscale, 10);
+#else
+	gtk_widget_set_can_focus ((GtkWidget *)temp->hscale, FALSE);
 #endif
 	gtk_box_pack_start((GtkBox *)temp->widget, temp->hscale, FALSE, FALSE, 0);
 
@@ -477,6 +492,7 @@ top_widget_t *top_widget_new(GtkWindow *window) {
 	temp->pb_pos_poll_thread = 0;
 	temp->restore_volume_thread = 0;
 	temp->set_pb_position_thread = 0;
+	temp->alpha = 255;
 
 #ifdef GTK3
 	temp->context = g_main_context_default();

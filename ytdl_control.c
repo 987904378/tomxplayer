@@ -39,21 +39,29 @@ void ytdl_register_url_cb(ytdl_output_cb cb) {
 }
 void *ytdl_cget_url(void *arg) {
 	char *urlin =  (char *)arg;
-	char cmd[1024];
-	sprintf(cmd, "youtube-dl -f '(mp4)[height<480]' --get-url '%s' 2>&1", urlin);
-	FILE * fp = popen(cmd,"r");
+	char *cmd;
 	size_t size = 0;
 	char *buf = NULL;
+	pthread_detach(pthread_self());
+	asprintf(&cmd, "youtube-dl -f '(mp4)[height<480]' --get-url '%s' 2>&1", urlin);
+	FILE * fp = popen(cmd,"r");
 	if(fp == NULL) {
 	     LOGE(TAG, "Could not execute '%s'", cmd);
+	     if(output_cb != NULL) { output_cb("Error executing 'youtube-dl'");}
 	     return NULL;
 	}
 	while (getline(&buf, &size,fp) > -1) {
+		buf[strlen(buf) -1] = '\0';
 		LOGD(TAG, "%s", buf);
 		if(strncmp(buf, "http", 4))
 			if(output_cb != NULL) { output_cb(buf);}
 	}
-	pclose(fp);
+	int status = pclose(fp);
+	if(status) {
+		char *exit_message;
+		asprintf(&exit_message, "Opps! 'youtube-dl' exited with code %d", status);
+		if(output_cb != NULL) { output_cb(exit_message);}
+	}
 	if(!strncmp(buf, "http", 4)) {
 		LOGD(TAG, "URL=%s",buf);
 		if(url_cb != NULL) { url_cb(buf);}

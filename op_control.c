@@ -43,7 +43,14 @@ static int alpha1 = 255;
 static opc_playback_completed_func playback_completed_cb;
 static void *playback_completed_user_data;
 
-
+void opc_init() {
+	/* Running this sets up the dbus session file in /tmp */
+	system("omxplayer --version"
+#ifndef DEBUG
+		" > /dev/null"
+#endif
+	);
+}
 void opc_register_playback_completed(opc_playback_completed_func cb, void *user_data) {
 	playback_completed_cb = cb;
 	playback_completed_user_data = user_data;
@@ -111,6 +118,13 @@ static void *start_omxplayer_system(void *arg) {
 
 void opc_start_omxplayer_thread(int tpos[], char * tfile_name) {
 	opc_stop_omxplayer();
+	if(tpos[3] - tpos[1] <=0 || tpos[2] - tpos[0] <=0) {
+		/* Can't have height or widget <= 0
+		 * omxplayer uses the whole screen then
+		 */
+		LOGE(TAG, "%s","Calculated height or width <= 0!");
+		return;
+	}
 	pos[0] = tpos[0];
 	pos[1] = tpos[1];
 	pos[2] = tpos[2];
