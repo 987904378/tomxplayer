@@ -29,6 +29,7 @@
 #include "main_settings.h"
 #include "op_dbus.h"
 #include <sys/types.h>
+#include <sys/wait.h>
 
 #define TAG "op_control"
 
@@ -36,7 +37,9 @@ static int pos[4];
 static char *file_name;
 static int is_running = 0;
 static pthread_t thread;
+static pthread_t out_read_thread;
 static int hidden = 0;
+static int alpha1 = 255;
 static opc_playback_completed_func playback_completed_cb;
 static void *playback_completed_user_data;
 
@@ -47,22 +50,43 @@ void opc_register_playback_completed(opc_playback_completed_func cb, void *user_
 }
 void opc_stop_omxplayer() {
 	if(is_running) {
+		opc_playback_completed_func cb = playback_completed_cb;
+		playback_completed_cb = NULL;
 		op_dbus_send_stop();
+		pthread_cancel(out_read_thread);
+		pthread_join(out_read_thread, NULL);
 		pthread_cancel(thread);
+		pthread_join(thread, NULL);
+		playback_completed_cb = cb;
+		is_running = 0;
 	}
+}
+
+static void *omxplayer_output_read(void *arg) {
+	char *buf = NULL;
+	size_t size = 0;
+	FILE *fp = (FILE *)arg;
+	while (getline(&buf, &size,fp) > 0) {
+		buf[strlen(buf) -1] = '\0';
+		LOGD(TAG, "%s", buf);
+		if(strstr(buf, "have a nice day") != NULL) {
+			LOGD(TAG, "%s", "End game found!");
+			is_running = 0;
+			int status = pclose(fp);
+			if(playback_completed_cb != NULL) { playback_completed_cb(status, playback_completed_user_data); }
+			break;
+		}
+	}
+	return NULL;
 }
 
 static void *start_omxplayer_system(void *arg) {
 	char *cmd;
-	int ret;
+	FILE *fp;
 	is_running = 1;
-	asprintf(&cmd, "omxplayer %s %s --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1"
-#ifndef DEBUG
-	" > /dev/null"
-#endif
-	,
+	asprintf(&cmd, "omxplayer %s --alpha %d --dbus_name org.mpris.MediaPlayer2.omxplayer%d --adev %s --aspect-mode %s --no-keys --no-osd --win %d,%d,%d,%d '%s' 2>&1",
 	omx_extra_args.string_value,
-	hidden ? "--alpha 0" : "",
+	hidden ? 0 : alpha1,
 	getpid(),
 	audio_out.string_value,
 	stretch.int_value ? "stretch": "Letterbox", 
@@ -72,10 +96,16 @@ static void *start_omxplayer_system(void *arg) {
 	pos[3] + arb_y_offset.int_value,
 	file_name);
 	LOGD(TAG, "starting omxplayer: %s",cmd);
-	ret = system(cmd);
+	fp = popen(cmd, "r");
 	free(cmd);
-	is_running = 0;
-	if(playback_completed_cb != NULL) { playback_completed_cb(ret, playback_completed_user_data); }
+	if(fp < 0) {
+		LOGE(TAG, "%s", "Trouble executing omxplayer!");
+		is_running = 0;
+		if(playback_completed_cb != NULL) { playback_completed_cb(-1, playback_completed_user_data); }
+		return NULL;
+	}
+	pthread_create(&out_read_thread, NULL, &omxplayer_output_read, fp);
+	pthread_join(out_read_thread, NULL);
 	return NULL;
 }
 
@@ -109,7 +139,6 @@ int opc_status(long long pbpos[]) {
 void opc_toggle_playpause() {
 	if(!is_running) return;
 	op_dbus_send_pause();
-	op_dbus_send_duration();
 }
 
 int opc_set_volume(double vol) {
@@ -140,7 +169,8 @@ void opc_set_aspect(char * aspect) {
 }
 
 void opc_set_alpha(int alpha) {
-if(!is_running) return;
+	alpha1 = alpha;
+	if(!is_running) return;
 	op_dbus_send_setalpha((long long) alpha);
 }
 
