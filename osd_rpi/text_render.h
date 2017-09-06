@@ -22,13 +22,44 @@
 #ifndef TEXT_RENDER_H
 #define TEXT_RENDER_H
 #include <stdint.h>
+#include <unistd.h>
+#include <semaphore.h>
+#include <pthread.h>
+#include "vgfont.h"
+#include "bcm_host.h"
 
-void tr_init();
-void tr_set_xy(uint32_t cx, uint32_t cy);
-void tr_set_max_width(uint32_t mw);
-void tr_set_text_size(uint32_t tz);
-void tr_stop();
+typedef enum TR_DISPLAY_POSITION {
+  TR_POS_BOTTOM_LEFT = 0,
+  TR_POS_BOTTOM_CENTER,
+  TR_POS_BOTTOM_RIGHT,
+} tr_display_pos_t;
+
+typedef struct {
+	GRAPHICS_RESOURCE_HANDLE img;
+	uint32_t x;
+	uint32_t y;
+	uint32_t max_width;
+	uint32_t max_height;
+	uint32_t disp_height;
+	uint32_t disp_width;
+	char *text;
+	int showing;
+	int layer;
+	uint32_t alpha;
+	sem_t sem;
+	uint32_t text_size;
+	pthread_t thread;
+	tr_display_pos_t position;
+} text_render_t;
+
+text_render_t *tr_new();
+void tr_set_text(text_render_t *tr, char * t);
+void tr_set_xy(text_render_t *tr, uint32_t cx, uint32_t cy);
+void tr_set_max_width(text_render_t *tr, uint32_t mw);
+void tr_set_max_height(text_render_t *tr, uint32_t mh);
+void tr_set_text_size(text_render_t *tr, uint32_t tz);
+void tr_stop(text_render_t *tr);
 void tr_deinit();
-void tr_show_thread(char * string);
+void tr_show_thread(text_render_t *tr);
 
 #endif

@@ -23,7 +23,9 @@
 #include "op_control.h"
 #include "op_widget.h"
 #include "main_settings.h"
+#ifndef NO_OSD
 #include "osd_rpi/text_render.h"
+#endif
 #include "log.h"
 #include <string.h>
 #include "op_dbus.h"
@@ -54,11 +56,12 @@ static void calc_render_pos(op_widget_t *temp) {
 	}
 #endif
 #ifndef NO_OSD
-	tr_set_xy((unsigned int)temp->pos[0] + 10,(unsigned int)temp->pos[3] -10);
-	tr_set_max_width((unsigned int)temp->da_w - 20);
+	tr_set_xy(temp->tr, (unsigned int)temp->pos[0] + 10,(unsigned int)temp->pos[1] +10);
+	tr_set_max_width(temp->tr, (unsigned int)temp->da_w - 20);
+	tr_set_max_height(temp->tr, (unsigned int)temp->da_h - 20);
 	if(osd_textsize_percent.int_value) {
 		double percent = osd_textsize.int_value * 0.01;
-		tr_set_text_size((unsigned int)(temp->da_h * percent));
+		tr_set_text_size(temp->tr, (unsigned int)(temp->da_h * percent));
 	}
 #endif
 	opc_update_pos(temp->pos); 
@@ -95,7 +98,7 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 		temp->minimized = TRUE;
 		opc_hidevideo();
 #ifndef NO_OSD
-		tr_stop();
+		tr_stop(temp->tr);
 #endif
 	} else { 
 		temp->minimized = FALSE;
@@ -135,9 +138,9 @@ void op_widget_toggle_playpause() {
 	opc_toggle_playpause();
 }
 
-void op_widget_stop_omxplayer() {
+void op_widget_stop_omxplayer(op_widget_t *opw) {
 #ifndef NO_OSD
-	tr_stop();
+	tr_stop(opw->tr);
 #endif
 	opc_stop_omxplayer();
 }
@@ -150,14 +153,14 @@ void op_widget_set_pb_position(unsigned long pos) {
 	opc_set_pb_position(pos);
 }
 
-void op_widget_hidevideo() {
+void op_widget_hidevideo(op_widget_t *opw) {
 #ifndef NO_OSD
-	tr_stop();
+	tr_stop(opw->tr);
 #endif
 	opc_hidevideo();
 }
 
-void op_widget_unhidevideo() {
+void op_widget_unhidevideo(op_widget_t *opw) {
 	opc_unhidevideo();
 }
 
@@ -181,14 +184,16 @@ void op_widget_play(op_widget_t *op_widget, char *vpath) {
 
 void op_widget_osd_show(op_widget_t *opw, char *text) {
 #ifndef NO_OSD
-	if(!opw->minimized)
-		tr_show_thread(text);
+	if(!opw->minimized) {
+		tr_set_text(opw->tr, text);
+		tr_show_thread(opw->tr);
+	}
 #endif
 }
 
 void op_widget_osd_set_text_size(op_widget_t *opw, unsigned int size) {
 #ifndef NO_OSD
-	tr_set_text_size(size);
+	tr_set_text_size(opw->tr, size);
 	LOGD(TAG, "%s", "osd_text_size updated");
 #endif
 }
@@ -209,11 +214,11 @@ int op_widget_is_ready(op_widget_t *opw) {
 
 void op_widget_destroy(op_widget_t *opw) {
 #ifndef NO_OSD
-	tr_stop();
-	op_widget_stop_omxplayer();
-	tr_deinit();
+	tr_stop(opw->tr);
+	op_widget_stop_omxplayer(opw);
+	//tr_deinit();
 #else
-	op_widget_stop_omxplayer();
+	op_widget_stop_omxplayer(opw);
 #endif
 }
 
@@ -249,7 +254,7 @@ op_widget_t *op_widget_new(GtkWindow *window) {
 #endif
 	g_signal_connect((GObject *)window, "window-state-event", G_CALLBACK(event_window_state),temp);
 #ifndef NO_OSD
-	tr_init();
+	temp->tr = tr_new();
 #endif
 	arb_x_offset.setting_update_cb = &arb_offset_updated;
 	arb_x_offset.setting_update_cb_user_data = temp;

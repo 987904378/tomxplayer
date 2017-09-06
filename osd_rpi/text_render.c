@@ -46,132 +46,188 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "vgfont.h"
 
 #include "../main_settings.h"
+#include "../log.h"
+#include "text_render.h"
 
-static GRAPHICS_RESOURCE_HANDLE img;
-static uint32_t x,y = 0;
-static char *text;
-static int showing = 0;
-static uint32_t alpha = 0xff;
-static int dinit = 0;
-static sem_t sem;
-static uint32_t max_width = 100;
-static uint32_t text_size = 30;
-static pthread_t thread;
+#define TAG "text_render"
 
-static int32_t render_subtitle(GRAPHICS_RESOURCE_HANDLE img, const uint32_t text_size, const char * textt)
+//static GRAPHICS_RESOURCE_HANDLE img;
+//static uint32_t x,y = 0;
+//static char *text;
+//static int showing = 0;
+//static uint32_t alpha = 0xff;
+//static int dinit = 0;
+static int init = 0;
+//static sem_t sem;
+//static uint32_t max_width = 100;
+//static uint32_t text_size = 30;
+//static pthread_t thread;
+static int next_layer = 0;
+
+static int32_t render_subtitle(text_render_t *tr)
 {
-   uint32_t text_length = strlen(textt);
-   uint32_t width=0, height=0;
+   uint32_t width=0, height=0, x=0, y=0;
    int32_t s=0;
    uint32_t img_w, img_h;
+   sem_wait(&tr->sem);
+   char *textt = strdup(tr->text);
+   sem_post(&tr->sem);
+   uint32_t text_length = strlen(textt);
 
-   graphics_get_resource_size(img, &img_w, &img_h);
+   graphics_get_resource_size(tr->img, &img_w, &img_h);
 
    if (text_length==0)
       return 0;
 
-   s = graphics_resource_text_dimensions_ext(img, textt, text_length, &width, &height, text_size);
-   if(width > max_width) {
-   		s = render_subtitle(img,text_size,strndup(textt,text_length - 3));
+   s = graphics_resource_text_dimensions_ext(tr->img, textt, text_length, &width, &height, tr->text_size);
+   if(width > tr->max_width) {
+   		sem_wait(&tr->sem);
+   		tr->text = strndup(textt,text_length - 3);
+   		sem_post(&tr->sem);
+   		s = render_subtitle(tr);
    } else {
-   s = graphics_resource_render_text_ext(img, x + (max_width - width) / 2, y - height,
+       switch(tr->position) {
+           case TR_POS_BOTTOM_LEFT:
+               x = tr->x;
+               y = tr->y + tr->max_height - height;
+               break;
+           case TR_POS_BOTTOM_RIGHT:
+               x = tr->x + tr->max_width - width;
+               y = tr->y + tr->max_height - height;
+               break;
+           default:
+               x = tr->x + (tr->max_width - width) / 2;
+               y = tr->y + tr->max_height - height;
+       }
+       s = graphics_resource_render_text_ext(tr->img, x, y,
                                      GRAPHICS_RESOURCE_WIDTH,
                                      GRAPHICS_RESOURCE_HEIGHT,
-                                     GRAPHICS_RGBA32(0xff,0xff,0xff,alpha), /* fg */
-                                     GRAPHICS_RGBA32(0,0,0,alpha < 0xa0 ? 0:0x80), /* bg */
-                                     textt, text_length, text_size);
+                                     GRAPHICS_RGBA32(0xff,0xff,0xff,tr->alpha), /* fg */
+                                     GRAPHICS_RGBA32(0,0,0,tr->alpha < 0xa0 ? 0:0x80), /* bg */
+                                     textt, text_length, tr->text_size);
    }
    return s;
 }
 
-void tr_init() {
-   int s;
+text_render_t *tr_new() {
+	int check = 0;
+	text_render_t *temp = malloc(sizeof(text_render_t));
 
-   bcm_host_init();
+	if(!init) {
+		bcm_host_init();
+		init = 1;
+	}
 
-   s = gx_graphics_init(FONT_DIR);
-   assert(s == 0);
-   sem_init(&sem,0,1);
+	check = gx_graphics_init(FONT_DIR);
+	if(check) {
+		LOGE(TAG, "gr_graphics_init failed! Is the font @ '%s'?", FONT_DIR);
+		assert(0);
+	}
+
+	check = graphics_get_display_size(0, &temp->disp_width, &temp->disp_height);
+	if(check) {
+		LOGE(TAG, "%s", "graphics_get_display_size failed!");
+		assert(0);
+	}
+
+	check = gx_create_window(0, temp->disp_width, temp->disp_height, GRAPHICS_RESOURCE_RGBA32, &temp->img);
+	if(check) {
+		LOGE(TAG, "%s", "gx_create_window failed!");
+		assert(0);
+	}
+
+	graphics_resource_fill(temp->img, 0, 0, temp->disp_width, temp->disp_height, GRAPHICS_RGBA32(0,0,0,0x00));
+
+	temp->x = 0;
+	temp->y = 0;
+	temp->text = "";
+	temp->showing = 0;
+	next_layer ++;
+	temp->layer = next_layer;
+	temp->alpha = 0xff;
+	sem_init(&temp->sem,0,1);
+	temp->max_width = 100;
+	temp->max_height = 100;
+	temp->text_size = 30;
+	temp->thread = 0;
+	temp->position = TR_POS_BOTTOM_LEFT;
+
+	graphics_display_resource(temp->img, 0, temp->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 1);
+
+	return temp;
 }
 
-void tr_set_xy(uint32_t cx, uint32_t cy) {
-	y = cy;
-	x = cx;
+void tr_set_xy(text_render_t *tr, uint32_t cx, uint32_t cy) {
+	sem_wait(&tr->sem);
+	tr->y = cy;
+	tr->x = cx;
+	sem_post(&tr->sem);
 }
 
-void tr_set_max_width(uint32_t mw) {
-	max_width = mw;
+void tr_set_max_width(text_render_t *tr, uint32_t mw) {
+	sem_wait(&tr->sem);
+	tr->max_width = mw;
+	sem_post(&tr->sem);
 }
 
-void tr_set_text_size(uint32_t tz) {
-	text_size = tz;
+void tr_set_max_height(text_render_t *tr, uint32_t mh) {
+	sem_wait(&tr->sem);
+	tr->max_height = mh;
+	sem_post(&tr->sem);
 }
 
-void tr_stop() {
-	alpha = 1;
+void tr_set_text_size(text_render_t *tr, uint32_t tz) {
+	sem_wait(&tr->sem);
+	tr->text_size = tz;
+	sem_post(&tr->sem);
+}
+
+void tr_stop(text_render_t *tr) {
+	sem_wait(&tr->sem); 
+	tr->alpha = 1;
+	sem_post(&tr->sem);
+	pthread_join(tr->thread, NULL);
 }
 
 void tr_deinit() {
-   dinit = 1;
-   tr_stop();
-   graphics_delete_resource(img);
-   bcm_host_deinit();
+   init = 0;
+   //graphics_delete_resource(img);
+   //bcm_host_deinit();
 }
 
-static void tr_set_text(char * t) {
-	sem_wait(&sem);
-	asprintf(&text,"%s",t);
-	free(t);
-	sem_post(&sem);
+void tr_set_text(text_render_t *tr, char * t) {
+	sem_wait(&tr->sem);
+	tr->text = strdup(t);
+	sem_post(&tr->sem);
 }
 
-static void *tr_show(void * string_arg)
+static void *tr_show(void * arg)
 {
-   if(!osd_enable.int_value)
-		return NULL;
-   char * string = (char *)string_arg;
-   uint32_t width, height;
-   int LAYER=1;
-   int s;
+   text_render_t *tr = (text_render_t *)arg;
+   if(!init) return NULL;
+   tr->alpha = 0xff;
 
-   if(dinit) return NULL;
-   tr_set_text(string);
-   alpha = 0xff;
-   if(showing) {
-       return NULL;
+   graphics_resource_fill(tr->img, 0, 0, tr->disp_width, tr->disp_height, GRAPHICS_RGBA32(0,0,0,0x00));
+
+   graphics_display_resource(tr->img, 0, tr->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 1);
+
+   while (tr->alpha > 0) {
+      graphics_resource_fill(tr->img, 0, 0, tr->disp_width, tr->disp_height, GRAPHICS_RGBA32(0,0,0,0));
+      render_subtitle(tr);
+      graphics_update_displayed_resource(tr->img, 0, 0, 0, 0);
+      tr->alpha -= 1;
    }
-   showing = 1;
-
-   s = graphics_get_display_size(0, &width, &height);
-   assert(s == 0);
-   if(!img) {
-	   s = gx_create_window(0, width, height, GRAPHICS_RESOURCE_RGBA32, &img);
-	   assert(s == 0);
-   }
-
-   // transparent before display to avoid screen flash
-   graphics_resource_fill(img, 0, 0, width, height, GRAPHICS_RGBA32(0,0,0,0x00));
-
-   graphics_display_resource(img, 0, LAYER, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 1);
-
-   while (alpha > 0) {
-      graphics_resource_fill(img, 0, 0, width, height, GRAPHICS_RGBA32(0,0,0,0));
-      // draw the subtitle text
-      sem_wait(&sem);
-      char *textc = strdup(text);
-      sem_post(&sem);
-      render_subtitle(img, text_size, textc);
-      free(textc);
-      graphics_update_displayed_resource(img, 0, 0, 0, 0);
-      alpha -= 1;
-   }
-   showing = 0;
-   graphics_display_resource(img, 0, LAYER, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 0);
+   graphics_display_resource(tr->img, 0, tr->layer, 0, 0, GRAPHICS_RESOURCE_WIDTH, GRAPHICS_RESOURCE_HEIGHT, VC_DISPMAN_ROT0, 0);
+   tr->showing = 0;
    return NULL;
 }
 
-void tr_show_thread(char * string) {
-	pthread_create(&thread, NULL, &tr_show, strdup(string));
+void tr_show_thread(text_render_t *tr) {
+	if(!tr->showing && osd_enable.int_value) {
+		tr->showing = 1;
+		pthread_create(&tr->thread, NULL, &tr_show, tr);
+	} else
+		tr->alpha = 0xff;
 }
 
 #endif

@@ -24,6 +24,9 @@
 #include <gtk/gtk.h>
 #include <pthread.h>
 #include "op_control.h"
+#ifndef NO_OSD
+#include "osd_rpi/text_render.h"
+#endif
 
 typedef struct {
 	GtkWidget *drawing_area;
@@ -47,14 +50,17 @@ typedef struct {
 	int is_running;
 	int hidden;
 	pthread_t thread;
+#ifndef NO_OSD
+	text_render_t *tr;
+#endif
 } op_widget_t;
 
 void op_widget_set_pb_position(unsigned long pos);
 int op_widget_status(long long pbpos[]);
-void op_widget_hidevideo();
-void op_widget_unhidevideo();
+void op_widget_hidevideo(op_widget_t *opw);
+void op_widget_unhidevideo(op_widget_t *opw);
 void op_widget_toggle_playpause();
-void op_widget_stop_omxplayer();
+void op_widget_stop_omxplayer(op_widget_t *opw);
 int op_widget_set_volume(double vol);
 void op_widget_set_aspect(char *aspect);
 void op_widget_set_alpha(int alpha);

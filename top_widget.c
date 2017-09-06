@@ -345,7 +345,7 @@ void top_widget_toggle_playpause(top_widget_t *topw) {
 }
 
 void top_widget_stop(top_widget_t *topw) {
-	op_widget_stop_omxplayer();
+	op_widget_stop_omxplayer(topw->op_widget);
 	topw->pb_pos = 0;
 	topw->pb_dur = 100;
 	update_pb_position_ui(topw);

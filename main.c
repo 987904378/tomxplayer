@@ -32,7 +32,6 @@
 #include <stdio.h>
 #include <signal.h>
 #include "time_utils.h"
-#include "osd_rpi/text_render.h"
 #include <libgen.h>
 #include <sys/types.h>
 #include <signal.h>
@@ -173,9 +172,6 @@ static void window_realize(GtkWidget *widget, gpointer data) {
 
 static void preferences_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_hidevideo(topw);
-#ifndef NO_OSD
-	tr_stop();
-#endif
 	preference_dialog_t *pd = gtk_preference_dialog_new((GtkWindow *)window);
 	gtk_preference_dialog_add(pd, &audio_settings);
 	gtk_preference_dialog_add(pd, &playback_settings);
@@ -203,9 +199,6 @@ static void ytdl_url_cb(char *url) {
 
 static void url_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_hidevideo(topw);
-#ifndef NO_OSD
-	tr_stop();
-#endif
 	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
 	int response = gtk_dialog_run (GTK_DIALOG (ud->window));
 	if (response == GTK_RESPONSE_ACCEPT) {
@@ -402,7 +395,7 @@ static void about_clicked(GtkWidget *widget, gpointer user_data) {
 	top_widget_hidevideo(topw);
 	gtk_dialog_run((GtkDialog *) ad);
 	gtk_widget_destroy((GtkWidget *)ad);
-	op_widget_unhidevideo(topw);
+	top_widget_unhidevideo(topw);
 }
 
 static void build_drawing_area(GtkBox *vbox) {
@@ -592,6 +585,5 @@ int main (int argc, char * argv[]) {
 	gtk_widget_show_all(window);
 	init_settings();
 	gtk_main();
-	op_widget_stop_omxplayer();
 	return 0;
 }
