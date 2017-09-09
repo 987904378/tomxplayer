@@ -8,4 +8,3 @@ else
 	echo "Neither mate-session-inhibit or systemd-inhibit was found. Screensaver might be a problem." >&2
 	./tomxplayer.bin "${@}"
 fi
-killall omxplayer.bin
