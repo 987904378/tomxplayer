@@ -326,8 +326,10 @@ int top_widget_set_video_path(top_widget_t *topw, char *path) {
 		return err;
 	}
 	LOGD(TAG, "Video path set to %s",path);
-	if(topw->playlist != NULL)
+	if(topw->playlist != NULL) {
 		mp_free(topw->playlist);
+		topw->playlist = NULL;
+	}
 	if(cont_pb.int_value && !is_http)
 		topw->playlist = mp_create_dir_of_file(path);
 	else {

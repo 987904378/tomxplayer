@@ -88,7 +88,7 @@ media_playlist_t *mp_create_dir_of_file(char * path) {
 }
 
 void mp_add(media_playlist_t *plist, char *full_path) {
-	list_add_entry(&plist->list, full_path);
+	list_add_entry(&plist->list, strdup(full_path));
 }
 
 char *mp_get_current(media_playlist_t *plist) {
