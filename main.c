@@ -60,7 +60,6 @@ static GtkWidget *top_controls;
 static GtkWidget *top_toolbar;
 static GtkToolItem *fullscreen;
 static gboolean _fullscreen = FALSE;
-static gboolean _minimized = FALSE;
 static gboolean _focused = TRUE;
 static gboolean _dialog_showing = FALSE;
 
@@ -107,7 +106,7 @@ static void destroy( GtkWidget *widget, gpointer data ) {
 
 gboolean window_focus_out_event (GtkWidget *widget, GdkEventFocus *event, gpointer user_data) {
 	_focused = FALSE;
-	if(win_trans_unfocus.int_value && !_minimized && !topw->hidden) {
+	if(win_trans_unfocus.int_value && !topw->op_widget->minimized && !topw->hidden) {
 		top_widget_set_alpha(topw, win_trans_alpha.int_value);
 #ifdef GTK3
 		gtk_widget_set_opacity ((GtkWidget *)window, (double)win_trans_alpha.int_value / 255);

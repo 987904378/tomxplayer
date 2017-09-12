@@ -100,6 +100,10 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 #ifndef NO_OSD
 		tr_stop(temp->tr);
 #endif
+#ifdef GTK3
+		if(win_trans_unfocus.int_value)
+			gtk_widget_set_opacity ((GtkWidget *)widget, 0);
+#endif
 	} else { 
 		temp->minimized = FALSE;
 		opc_unhidevideo();
