@@ -204,28 +204,23 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 	_dialog_showing = TRUE;
 	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
 	int response = gtk_dialog_run (GTK_DIALOG (ud->window));
+	gtk_widget_destroy((GtkWidget *)ud->window);
 	if (response == GTK_RESPONSE_ACCEPT) {
-		gtk_widget_destroy((GtkWidget *)ud->window);
 		if(ud->url != NULL) {
 			top_widget_set_video_path(topw, ud->url);
 			top_widget_play_path(topw);
-		} else
-			top_widget_unhidevideo(topw);
+		}
 	} else if (response == GTK_RESPONSE_APPLY) {
 		if(ud->url != NULL) {
-			gtk_widget_destroy((GtkWidget *)ud->window);
 			_dialog_showing = FALSE;
 			ytdl_register_output_cb(&ytdl_out_cb);
 			ytdl_register_url_cb(&ytdl_url_cb);
 			ytdl_cget_url_thread(ud->url);
 			top_widget_stop(topw);
-		} else
-			top_widget_unhidevideo(topw);
-	} else {
-		gtk_widget_destroy((GtkWidget *)ud->window);
-		top_widget_unhidevideo(topw);
-		_dialog_showing = FALSE;
+		}
 	}
+	top_widget_unhidevideo(topw);
+	_dialog_showing = FALSE;
 	window_motion_notify_event(NULL, NULL, NULL);
 }
 
