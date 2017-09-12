@@ -264,16 +264,17 @@ static void pause_clicked( GtkWidget *widget, gpointer data ) {
 
 static void previous_clicked( GtkWidget *widget, gpointer data ) {
 	top_widget_t *topw = (top_widget_t *)data;
+	int64_t ms = 0;
 	if(cont_pb.int_value) {
 		unsigned long pos = (unsigned long) gtk_range_get_value((GtkRange *)topw->hscale);
 		if(pos > (1000 * 5000))
-			op_widget_set_pb_position(0);
+			op_widget_set_pb_position(&ms);
 		else {
 			mp_move_previous(topw->playlist);
 			top_widget_play_path(topw);
 		}
 	} else {
-		op_widget_set_pb_position(0);
+		op_widget_set_pb_position(&ms);
 	}
 }
 
