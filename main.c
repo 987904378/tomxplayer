@@ -205,6 +205,9 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 	url_dialog_t *ud = gtk_url_dialog_new((GtkWindow *)window);
 	int response = gtk_dialog_run (GTK_DIALOG (ud->window));
 	gtk_widget_destroy((GtkWidget *)ud->window);
+	top_widget_unhidevideo(topw);
+	_dialog_showing = FALSE;
+	window_motion_notify_event(NULL, NULL, NULL);
 	if (response == GTK_RESPONSE_ACCEPT) {
 		if(ud->url != NULL) {
 			top_widget_set_video_path(topw, ud->url);
@@ -219,9 +222,6 @@ static void url_clicked( GtkWidget *widget, gpointer data ) {
 			top_widget_stop(topw);
 		}
 	}
-	top_widget_unhidevideo(topw);
-	_dialog_showing = FALSE;
-	window_motion_notify_event(NULL, NULL, NULL);
 }
 
 static void fullscreen_clicked( GtkWidget *widget, gpointer data ) {
@@ -478,7 +478,8 @@ static void win_trans_setting_updated(void *setting, void *user_data) {
 #endif
 	} else {
 		top_widget_set_alpha(topw, 255);
-		top_widget_hidevideo(topw);
+		if(_dialog_showing)
+			top_widget_hidevideo(topw);
 #ifdef GTK3
 		if(window)
 			gtk_widget_set_opacity ((GtkWidget *)window, 1);
@@ -592,8 +593,8 @@ int main (int argc, char * argv[]) {
 	build_bottom_toolbar((GtkBox *)vbox);
 	if(argc > 1)
 		top_widget_set_video_path(topw, argv[argc -1]);
-	gtk_widget_show_all(window);
 	init_settings();
+	gtk_widget_show_all(window);
 	gtk_main();
 	return 0;
 }

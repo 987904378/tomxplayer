@@ -96,7 +96,7 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 	op_widget_t *temp = (op_widget_t *)user_data;
 	if(event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) {
 		temp->minimized = TRUE;
-		opc_hidevideo();
+		op_widget_hidevideo(temp);
 #ifndef NO_OSD
 		tr_stop(temp->tr);
 #endif
@@ -106,7 +106,7 @@ static gboolean event_window_state (GtkWidget *widget, GdkEventWindowState *even
 #endif
 	} else { 
 		temp->minimized = FALSE;
-		opc_unhidevideo();
+		op_widget_unhidevideo(temp);
 	}
 	temp->maximized = (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED);
 	temp->fullscreen = (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN);
@@ -189,6 +189,7 @@ void op_widget_play(op_widget_t *op_widget, char *vpath) {
 }
 
 void op_widget_osd_show(op_widget_t *opw, char *text) {
+	LOGD(TAG, "minimized=%d hidden=%d", opw->minimized, opw->hidden);
 #ifndef NO_OSD
 	if(!opw->minimized && !opw->hidden) {
 		tr_set_text(opw->tr, text);
