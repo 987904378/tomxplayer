@@ -40,7 +40,6 @@ OSD_LDPATHS := \
 OSD_LDFLAGS := \
 	-lbrcmGLESv2 \
 	-lbrcmEGL \
-	-lGLESv2 \
 	-lGLESv2_static \
 	-lkhrn_static \
 	-lopenmaxil \
