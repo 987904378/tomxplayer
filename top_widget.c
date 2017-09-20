@@ -42,21 +42,16 @@ static int do_volume(int vol) {
 }
 
 static void * restore_volume(void * arg) {
-	int count = 0;
-	while(do_volume(volume.int_value) && count < 200) {
+	while(do_volume(volume.int_value)) {
 		usleep(100 * 1000);
-		count ++;
 	}
 	usleep(100 * 1000);
 	top_widget_t *topw = (top_widget_t *)arg;
-	if(!topw->op_widget->minimized && count < 200) {
+	if(!topw->op_widget->minimized) {
 		if(!topw->hidden) {
 			op_widget_unhidevideo(topw->op_widget);
 			op_widget_set_alpha(topw->alpha);
 		}
-	} else if(count >= 199) {
-		LOGE(TAG, "%s" ,"Could not restore volume? Did omxplayer actually start?");
-		top_widget_stop(topw);
 	}
 	return NULL;
 }
@@ -319,19 +314,26 @@ static void playback_ended(int exit_code, void *user_data) {
 }
 
 int top_widget_set_video_path(top_widget_t *topw, char *path) {
-	int is_http = !strncmp(path,"http://",7) || !strncmp(path,"https://",8);
-	FILE * fd = fopen(path,"r");
-	if(fd == NULL && !is_http) {
-		int err = errno;
-		LOGE(TAG, "path '%s' - %s", path, strerror(err));
-		return err;
+	int is_url = !strncmp(path,"http://",7) || !strncmp(path,"https://",8) || !strncmp(path, "shout://", 8)
+				|| !strncmp(path, "rtmp://", 7) || !strncmp(path, "udp://", 6) || !strncmp(path, "rstp://", 7)
+				|| !strncmp(path, "rtp://", 6) || !strncmp(path, "ftp://", 6) || !strncmp(path, "sftp://", 7)
+				|| !strncmp(path, "tcp://", 6) || !strncmp(path, "unix://", 7) || !strncmp(path, "smb://", 6);
+	LOGD(TAG, "path is url? %d", is_url);
+	if(!is_url) {
+		FILE *fd = fopen(path,"r");
+		if(fd == NULL) {
+			int err = errno;
+			LOGE(TAG, "path '%s' - %s", path, strerror(err));
+			return err;
+		}
+		fclose(fd);
 	}
 	LOGD(TAG, "Video path set to %s",path);
 	if(topw->playlist != NULL) {
 		mp_free(topw->playlist);
 		topw->playlist = NULL;
 	}
-	if(cont_pb.int_value && !is_http)
+	if(cont_pb.int_value && !is_url)
 		topw->playlist = mp_create_dir_of_file(path);
 	else {
 		topw->playlist = mp_create();
