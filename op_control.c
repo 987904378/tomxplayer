@@ -79,12 +79,12 @@ static void *omxplayer_output_read(void *arg) {
 		LOGD(TAG, "%s", buf);
 		if(strstr(buf, "have a nice day") != NULL) {
 			LOGD(TAG, "%s", "End game found!");
-			is_running = 0;
-			int status = pclose(fp);
-			if(playback_completed_cb != NULL) { playback_completed_cb(status, playback_completed_user_data); }
 			break;
 		}
 	}
+	is_running = 0;
+	int status = pclose(fp);
+	if(playback_completed_cb != NULL) { playback_completed_cb(status, playback_completed_user_data); }
 	return NULL;
 }
 
